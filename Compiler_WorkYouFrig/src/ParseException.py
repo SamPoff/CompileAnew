@@ -5,51 +5,8 @@ Created on Oct 5, 2018
 @author: Sam
 '''
 
-"""
-Parses the output of the lexer into a syntax tree. Currently uses a bottom-up
-shift-reduce parsing algorithm. It's a touch ugly, but ShivC tries to avoid YACC
-or the like.
-"""
-
 import re
-
-
-class ParseNode:
-    """A node in the parse tree. Each node represents the application of a
-    particular grammar rule to a list of children nodes. Both are attributes."""
-
-    def __init__(self, rule, children):
-        self.rule = rule
-        self.children = children
-
-    def __repr__(self):
-        s = ""
-        for child in self.children:
-            if(type(child) == ParseNode):
-                s = s + str(child.rule.orig)
-            else:
-                s = s + child.val
-            
-        return str(self.rule.orig) + " [ " + s + " ] "
-
-    def display(self, level=0):
-        """Used for printing out the tree"""
-        print("|    " * level + str(self.rule.orig))
-        for child in self.children:
-            child.display(level + 1)
-
-    def bracket_repr(self):  # http://ironcreek.net/phpsyntaxtree/?
-        s = ""
-        for child in self.children:
-            if(type(child) == ParseNode):
-                temp = child.bracket_repr()
-                s = s + temp
-            else:
-                s = s + child.val
-            
-        outstr = "<" + str(self.rule.orig) + ':' + str(self.rule.new) + ">" + " [ " + s + " ] "
-        return outstr
-
+from ParseNode import ParseNode
 
 class ParseException(Exception):
     """An exception raised if the parsing goes badly"""
@@ -69,13 +26,13 @@ def generate_tree(tokens, grammar, start_symbol):
     """
     """
         Generates a syntax tree out of a list of tokens.
-        rules - A list of rules to apply. See Rules.py.
+        rules - A list of rules to apply. See Rule.py.
         start_symbol - The start symbol used as a placeholder for the stack.
     """
     """
         Create a parser.
     rules:
-        A list of rules. See Rules.py.Constructs parse tree using Rules 
+        A list of rules. See Rule.py.Constructs parse tree using Rule 
         to shift-reduce parse the stack of tokens. The stack of tokens is 
         from the lexer. See Compile.py.
     """

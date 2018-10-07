@@ -9,7 +9,6 @@ Created on Oct 5, 2018
 Rule class to represent grammar rules for parser.
 """
 
-
 class Rule:
     """A rule in the CFG for C"""
 

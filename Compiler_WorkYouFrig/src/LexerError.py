@@ -5,7 +5,6 @@ Created on Oct 5, 2018
 @author: Sam
 '''
 
-
 class LexerError(Exception):
 
     # Returns position where a lexing error has occured. 

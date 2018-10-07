@@ -5,53 +5,99 @@ Created on Oct 5, 2018
 @author: Sam
 '''
 
-from Lexer import Lexer
+from LexBuilder import LexBuilder
+from NewCompile import NewCompile
+from Token import Token
+from ParseException import ParseException
+from ParseException import generate_tree
+from Rule import Rule
+from LexerError import LexerError
 
-class Start(object):
-    
-        def __init__(self, filename, rules):  
-            self.filename = filename
-            self.rules = rules
 
-"""
-Change this path to source '.c' file.
-"""
+# Change this path to source '.c' file.
 path = 'C:\\Users\\Sam\\My Documents\\LiClipse Workspace\\Compiler\\src\\test.c'
 
-rules = [
-    ('(\/\*[\w\'\s\r\n\*]*\*\/)|(\/\/[\w\s\']*)|(\<![\-\-\s\w\>\/]*\>)',    'COMMENT', None),
-    ('\d+',                         'NUMBER', 60),
-    ('int',                         'TYPE_INT', 60),
-    ('char',                        'TYPE_CHAR', 5),
-    ('main',                        'MAIN', None),
-    ('return',                      'RETURN', 5),
-    ('else',                        'ELSE', 10),
-    ('if',                          'IF', 10),
-    ('for',                         'FOR', 10),
-    ('[_a-zA-Z][_a-zA-Z0-9]{0,31}', 'IDENTIFIER', 8),
-    ('\{',                          'LB', 9),
-    ('\}',                          'RB', 10),
-    ('\;',                          'SEMICOLON', 70),
-    ('\<=',                         'LESSTHANEQUAL', 20),
-    ('\<',                          'LESSTHAN', 20),
-    ('\>=',                         'GREATERTHANEQUAL', 20),
-    ('\>',                          'GREATERTHAN', 20),
-    ('\+',                          'PLUS', 70),
-    ('\-',                          'MINUS', 70),
-    ('\*',                          'MULTIPLY', 65),
-    ('\/',                          'DIVIDE', 65),
-    ('\(',                          'LP', 40),
-    ('\)',                          'RP', 40),
-    ('==',                          'EQUALVALUE', 20),
-    ('=',                           'EQUALSIGN', 30),
-     
-]
 
-# Generates an object containing the rules and path
-# to '.c' file.
-run = Start( path, rules )
+def inputLexData( filename ):
+        with open(filename, 'r') as myfile:
+            data = myfile.read().replace('\n', '')
+            return data
+        
+def genTokenList( lexObj ):
+    try:
+        token_list = []
+        for index, tok in enumerate(lexObj.tokens()):
+            if(tok.type == 'COMMENT'):
+                tok = None
+            else:
+                token_list.append(tok)
+                print('Token found at index: ', index, tok.val, ' Token priority: ', tok.priority)
+    except LexerError as err:
+        print('LexerError at position %s' % err.pos)
+
+# Generates an object containing the lexing rules and path
+# to the '.c' file.
+compileObj = NewCompile( path )
+
 # Generates a lexer object with the rules specified
-# above. 
-lx = Lexer( rules, skip_whitespace=True )
+# in compObj.
+lexObj = LexBuilder( compileObj.rules, skip_whitespace=True )
+
+# Get text data from file you want to lex, then input data
+# into lexer object.
+data = lexObj.inputLexData( path )
+lexObj.input( data )
+genTokenList( lexObj )
+
+# try:
+#     token_list = []
+#     for index, tok in enumerate(lexObj.tokens()):
+#         if(tok.type == 'COMMENT'):
+#             tok = None
+#         else:
+#             token_list.append(tok)
+#             print('Token found at index: ', index, tok.val, ' Token priority: ', tok.priority)
+# except LexerError as err:
+#     print('LexerError at position %s' % err.pos)
+#   
+# # start symbol used in parser
+# start_symbol = Token("START", "START", None, None)
+#   
+# tree = ParseException.generate_tree(token_list, Rule.rules, start_symbol)
+# print(tree)
+# print("\n\n\n\n")
+# print(tree.bracket_repr())
+
+
+
+# def start(self, filename, rules): 
+#         with open(filename, 'r') as myfile:
+#             data = myfile.read().replace('\n', '')
+# #             print( data )
+#      
+#         lx = LexBuilder(rules, skip_whitespace=True)
+#         lx.input(data)
+#      
+#         try:
+#             token_list = []
+#             for index, tok in enumerate(lx.tokens()):
+#                 if(tok.type == 'COMMENT'):
+#                     tok = None
+#                 else:
+#                     token_list.append(tok)
+#                     print(index, tok.val, tok.priority)
+#         except LexerError as err:
+#             print('LexerError at position %s' % err.pos)
+#           
+#         # start symbol used in parser
+#         start_symbol = Token("START", "START", None, None)
+#           
+#         tree = ParseNode.generate_tree(token_list, Rule.rules, start_symbol)
+#         print(tree)
+#         print("\n\n\n\n")
+#         print(tree.bracket_repr())
+
+
+
 # Starts the actural lexing process, results in a 
-lx.start( run.filename, run.rules )
+# lex_obj.start( path, compile_obj.rules )

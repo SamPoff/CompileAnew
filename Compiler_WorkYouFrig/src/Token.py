@@ -5,7 +5,6 @@ Created on Oct 5, 2018
 @author: Sam
 '''
 
-
 class Token(object):
 
     # A simple Token structure.
