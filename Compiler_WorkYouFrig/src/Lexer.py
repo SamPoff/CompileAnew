@@ -11,7 +11,6 @@ import LexerError
 import Rules
 import Parse
 
-#test
 class Lexer(object):
     """ A simple regex-based lexer/tokenizer.
         See below for an example of usage.
