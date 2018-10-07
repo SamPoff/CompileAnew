@@ -12,13 +12,14 @@ Rule class to represent grammar rules for parser.
 class Rule:
     """A rule in the CFG for C"""
 
-    def __init__(self, value, orig, new, priority=None):
+    def __init__(self, value, orig, new, rules, priority=None):
         # orig - stores the symbol the rules replaces
         # new - stores the symbol(s) the rules replaces `orig` with
         # priority - priority of the rule relative to priority of nex
         self.orig = orig
         self.value = value
         self.new = new
+        self.rules = rules
         self.priority = priority
 
     def __repr__(self):

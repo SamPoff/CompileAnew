@@ -14,7 +14,7 @@ class LexBuilder(object):
         See below for an example of usage.
     """
 
-    def __init__( self, rules, skip_whitespace=False ):
+    def __init__( self, rules, filename , skip_whitespace=False ):
         # All the regexes are concatenated into a single one
         # with named groups. Since the group names must be valid
         # Python identifiers, but the token types used by the
@@ -35,6 +35,14 @@ class LexBuilder(object):
         self.regex = re.compile('|'.join(regex_parts))
         self.skip_whitespace = skip_whitespace
         self.re_ws_skip = re.compile('\S')
+        self.data = self.inputLexData( filename )
+#         print(self.data)
+        self.input( self.data )
+
+    def inputLexData( self, filename ):
+        with open(filename, 'r') as myfile:
+            data = myfile.read().replace('\n', '')
+            return data
 
     def input(self, buf):
         # Initialize the lexer with a buffer as input.
@@ -81,10 +89,23 @@ class LexBuilder(object):
             if LexBuilder.tok is None: break
             yield LexBuilder.tok
             
-    def inputLexData( self, filename ):
-        with open(filename, 'r') as myfile:
-            data = myfile.read().replace('\n', '')
-            return data
+    def genTokenList( self, lexObj ):
+        try:
+            token_list = []
+            for index, tok in enumerate(lexObj.tokens()):
+                if(tok.type == 'COMMENT'):
+                    tok = None
+                else:
+                    token_list.append(tok)
+                    print('Token found at index: ', index, tok.val, ' Token priority: ', tok.priority)
+            print('\n')
+        except LexerError as err:
+            print('LexerError at position %s' % err.pos)
+            
+#     def inputLexData( self, filename ):
+#         with open(filename, 'r') as myfile:
+#             data = myfile.read().replace('\n', '')
+#             return data
             
 #     def start(self, filename, rules): 
 #             with open(filename, 'r') as myfile:
@@ -107,7 +128,7 @@ class LexBuilder(object):
 #              
 #             # start symbol used in parser
 #             start_symbol = Token("START", "START", None, None)
-#              
+#               
 #             tree = ParseNode.generate_tree(token_list, Rule.rules, start_symbol)
 # #             print(tree)
 # #             print("\n\n\n\n")
