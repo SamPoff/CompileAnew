@@ -8,10 +8,8 @@ Created on Oct 5, 2018
 from NewCompile import NewCompile
 from LexBuilder import LexBuilder
 from ParseNode import ParseNode
-from ParseException import ParseException
 from Token import Token
 import Rule
-import re
 
 """
 # Change this path to source file.
