@@ -50,6 +50,7 @@ class ParseNode:
         outstr = "<" + str(self.rule.orig) + ':' + str(self.rule.new) + ">" + " [ " + s + " ] "
         return outstr
 
+    @classmethod
     def generate_tree(self, tokens, grammar, start_symbol):
         """
             start_symbol,
@@ -78,8 +79,7 @@ class ParseNode:
             rules match, shift on the next token to the stack.
         """
         while True:
-            print(stack)  # great for debugging
-          
+            print( stack )  # great for debugging
             for rule in grammar:
                 # The rule can't possibly match if there are more symbols to match
                 # than there are symbols in the stack

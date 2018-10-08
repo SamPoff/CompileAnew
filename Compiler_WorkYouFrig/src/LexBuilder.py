@@ -88,8 +88,9 @@ class LexBuilder(object):
             LexBuilder.tok = self.token()
             if LexBuilder.tok is None: break
             yield LexBuilder.tok
-            
-    def genTokenList( self, lexObj ):
+           
+    @staticmethod 
+    def genTokenList( lexObj ):
         try:
             token_list = []
             for index, tok in enumerate(lexObj.tokens()):
@@ -102,6 +103,7 @@ class LexBuilder(object):
                     """
 #                     print('Token found at index: ', index, tok.val, ' Token priority: ', tok.priority)
             print('\n')
+            return token_list
         except LexerError as err:
             print('LexerError at position %s' % err.pos)
     

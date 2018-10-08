@@ -14,7 +14,8 @@ import Rule
 """
 # Change this path to source file.
 """
-path = 'C:\\Users\\Sam\\My Documents\\LiClipse Workspace\\Compiler\\src\\test.c'
+# path = 'C:\\Users\\Sam\\My Documents\\LiClipse Workspace\\Compiler\\src\\test.c'
+path = '/Users/sp31485/git/CompileAnew/Compiler_WorkYouFrig/src/test.c'
 
 # Generates an object containing the lexing rules and path
 # to the '.c' file.
@@ -28,13 +29,22 @@ lexObj = LexBuilder( compileObj.rules, compileObj.filename, skip_whitespace=True
 
 # Generate a list of tokens from lex object.
 tokenList = lexObj.genTokenList( lexObj )
-print('Start token list')
-for tok in tokenList:
-    print(tok.val)
+# print('Start token list')
+# for tok in tokenList:
+#     print(tok.val)
     
 # start symbol used in parser
 start_symbol = Token( "START", "START", None, None )
 # print(start_symbol)
+
+print('\nTokens:\n')
+for tok in tokenList:
+    print(tok)
+print('\nRules:\n')
+for rule in Rule.rules:
+    print(rule)
+print('\nStart Symbol:')
+print(start_symbol)
   
 tree = ParseNode.generate_tree( tokenList, Rule.rules, start_symbol )
 #             print(tree)
