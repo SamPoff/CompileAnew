@@ -31,7 +31,7 @@ tokenList = lexObj.genTokenList( lexObj )
 
 # start symbol used in parser
 start_symbol = Token( "START", "START", None, None )
-# print(start_symbol)
+print(start_symbol)
   
 tree = ParseNode.generate_tree(  tokenList, Rule.rules, start_symbol )
 #             print(tree)
