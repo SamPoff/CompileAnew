@@ -5,10 +5,13 @@ Created on Oct 5, 2018
 @author: Sam
 '''
 
-from Token import Token
 from NewCompile import NewCompile
 from LexBuilder import LexBuilder
 from ParseNode import ParseNode
+from ParseException import ParseException
+from Token import Token
+import Rule
+import re
 
 """
 # Change this path to source file.
@@ -32,11 +35,8 @@ tokenList = lexObj.genTokenList( lexObj )
 start_symbol = Token( "START", "START", None, None )
 # print(start_symbol)
   
-tree = ParseNode.generate_tree(  tokenList, compileObj.rules, start_symbol )
+tree = ParseNode.generate_tree(  tokenList, Rule.rules, start_symbol )
 #             print(tree)
 #             print("\n\n\n\n")
 #             print(tree.bracket_repr())
    
-
-
-
