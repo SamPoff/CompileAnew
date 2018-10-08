@@ -9,7 +9,6 @@ from Token import Token
 from NewCompile import NewCompile
 from LexBuilder import LexBuilder
 from ParseNode import ParseNode
-from Rule import Rule
 
 """
 # Change this path to source file.
@@ -31,9 +30,9 @@ tokenList = lexObj.genTokenList( lexObj )
 
 # start symbol used in parser
 start_symbol = Token( "START", "START", None, None )
-print(start_symbol)
+# print(start_symbol)
   
-tree = ParseNode.generate_tree(  tokenList, Rule.rules, start_symbol )
+tree = ParseNode.generate_tree(  tokenList, compileObj.rules, start_symbol )
 #             print(tree)
 #             print("\n\n\n\n")
 #             print(tree.bracket_repr())
