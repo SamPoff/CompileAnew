@@ -120,7 +120,7 @@ class ParseNode:
                                     temp = token.type + temp
                                 # case if object is Token
                                 else:
-                                    temp = str(token.rule.orig) + temp
+                                    temp = str(token.rule.orig) + temp 
                                 # print(temp)
                             print(i)
                             node = ParseNode(rule, tree_stack[-i:])
