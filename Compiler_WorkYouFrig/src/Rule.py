@@ -62,6 +62,9 @@ rel_less_than = Rule('(E|IDENTIFIER|NUMBER)(LESSTHAN)(E|IDENTIFIER|NUMBER)', 'E'
 # something > something
 rel_greater_than = Rule('(E|IDENTIFIER|NUMBER)(GREATERTHAN)(E|IDENTIFIER|NUMBER)', 'E', 'E_GREATER_THAN', None)
 
+# # i = k + l;
+# all_ids = Rule('(IDENTIFIER)(EQUALSIGN)(IDENTIFIER)(PLUS)(IDENTIFIER)', 'E', 'E_ALL_IDENTIFIERS', None)
+
 """
 'LESSTHAN', 20),
         ('\<=',                         'LESSTHANEQUAL', 20),
