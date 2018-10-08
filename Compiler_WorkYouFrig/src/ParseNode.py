@@ -124,7 +124,7 @@ class ParseNode:
                                 # print(temp)
                             print(i)
                             node = ParseNode(rule, tree_stack[-i:])
-                            print(node)
+                            print('Printing Node ',node)
                             # simplify the tree stack
                             tree_stack = tree_stack[:-i] + [node]
                             # ParseNode(rule,)

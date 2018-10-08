@@ -25,29 +25,27 @@ compileObj = NewCompile( path )
 # in the compObj. Also adds in all the data from the input file
 # to the lex object automatically.
 lexObj = LexBuilder( compileObj.rules, compileObj.filename, skip_whitespace=True )
-# print( 'Data in Lexer Object: ', lexObj.data, '\n' )
 
 # Generate a list of tokens from lex object.
 tokenList = lexObj.genTokenList( lexObj )
-# print('Start token list')
-# for tok in tokenList:
-#     print(tok.val)
-    
+
 # start symbol used in parser
 start_symbol = Token( "START", "START", None, None )
-# print(start_symbol)
 
-print('\nTokens:\n')
-for tok in tokenList:
-    print(tok)
-print('\nRules:\n')
-for rule in Rule.rules:
-    print(rule)
-print('\nStart Symbol:')
-print(start_symbol)
+"""
+Debugging prints.
+"""
+# print('\nTokens:\n')
+# for tok in tokenList:
+#     print(tok)
+# print('\nRules:\n')
+# for rule in Rule.rules:
+#     print(rule)
+# print('\nStart Symbol:')
+# print(start_symbol)
   
 tree = ParseNode.generate_tree( tokenList, Rule.rules, start_symbol )
-#             print(tree)
-#             print("\n\n\n\n")
-#             print(tree.bracket_repr())
+print(tree)
+print("\n\n\n\n")
+print(tree.bracket_repr())
    
