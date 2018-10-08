@@ -30,12 +30,15 @@ lexObj = LexBuilder( compileObj.rules, compileObj.filename, skip_whitespace=True
 
 # Generate a list of tokens from lex object.
 tokenList = lexObj.genTokenList( lexObj )
-
+print('Start token list')
+for tok in tokenList:
+    print(tok.val)
+    
 # start symbol used in parser
 start_symbol = Token( "START", "START", None, None )
 # print(start_symbol)
   
-tree = ParseNode.generate_tree(  tokenList, Rule.rules, start_symbol )
+tree = ParseNode.generate_tree( tokenList, Rule.rules, start_symbol )
 #             print(tree)
 #             print("\n\n\n\n")
 #             print(tree.bracket_repr())
