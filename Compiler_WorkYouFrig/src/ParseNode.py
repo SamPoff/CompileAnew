@@ -106,7 +106,7 @@ class ParseNode:
                             and len(tokens) > 0 and tokens[0].priority is not None
                             and tokens[0].priority < rule.priority):
                                 break
-                        else:
+                        else: 
                             
                             # we apply the rule!
                             temp = ""
