@@ -14,8 +14,8 @@ import Rule
 """
 # Change this path to source file.
 """
-# path = 'C:\\Users\\Sam\\My Documents\\LiClipse Workspace\\Compiler\\src\\test.c'
-path = '/Users/sp31485/git/CompileAnew/Compiler_WorkYouFrig/src/test.c'
+path = 'C:\\Users\\Sam\\My Documents\\LiClipse Workspace\\Compiler\\src\\test.c'
+# path = '/Users/sp31485/git/CompileAnew/Compiler_WorkYouFrig/src/test.c'
 
 # Generates an object containing the lexing rules and path
 # to the '.c' file.
