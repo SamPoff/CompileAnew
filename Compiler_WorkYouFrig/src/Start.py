@@ -36,7 +36,7 @@ start_symbol = Token( "START", "START", None, None )
 
 # Generate abstract syntax tree.
 tree = ParseNode.generate_tree( tokenList, Rule.rules, start_symbol )
-print(tree)
-print("\n\n\n\n")
-print(tree.bracket_repr())
+# print(tree)
+# print("\n\n\n\n")
+# print(tree.bracket_repr())
    
