@@ -1,8 +1,8 @@
 '''
 Created on Oct 5, 2018
 
-@author: Fitch
-@author: Sam
+@author: Harrison Fitch
+@author: Samuel Poff
 '''
 
 """
