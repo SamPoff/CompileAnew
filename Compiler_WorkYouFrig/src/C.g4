@@ -716,7 +716,7 @@ OctalConstant
     :   '0' OctalDigit*
     ;
 
-fragment
+fragment 
 HexadecimalConstant
     :   HexadecimalPrefix HexadecimalDigit+
     ;
