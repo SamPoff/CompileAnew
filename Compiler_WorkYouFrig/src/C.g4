@@ -27,6 +27,11 @@
 /** C 2011 grammar built from the C11 Spec */
 grammar C;
 
+options
+{
+language = Python3;
+}
+
 primaryExpression
     :   Identifier
     |   Constant

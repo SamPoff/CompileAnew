@@ -6,4 +6,9 @@
 </pydev_pathproperty>
 <pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python interpreter</pydev_property>
 <pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">Default</pydev_property>
+<pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
+<path>/usr/lib/python3/dist-packages/antlr4-python3-runtime-4.7.1</path>
+<path>/usr/lib/python3.5</path>
+<path>/home/sam/git/CompileAnew/Compiler_WorkYouFrig/antlr4-4.7.1.jar</path>
+</pydev_pathproperty>
 </pydev_project>
