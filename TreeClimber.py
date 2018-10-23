@@ -35,7 +35,9 @@ class TreeClimber:
         print('\n')
         
         # Comment out next line to test the traveler only 
-        self.CodeGen.translate(tree.rule,toks)
+        self.CodeGen.translate(tree.rule.new,toks)
+        self.CodeGen.write_header()
+        
         """
         for child in tree.children:
             if(type(child) != ParseNode):
