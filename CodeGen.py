@@ -21,6 +21,7 @@ class CodeGen:
         self.mem_loc = 0
         self.assembly = ""
         self.header = ""
+        self.conditionals = [(1,'JMP'),(2,'JMPC'),(3,'JMPNC'),(4,'JMPZ'),(5,'JMPNZ')]
         file = open("assembly.tba","w")
         file.write("")
         file.close()
@@ -31,9 +32,11 @@ class CodeGen:
         file.write(self.assembly)
         file.close()
         self.assembly = ""
+        
     def write_header(self):
-        # write to assembly file
+        # write header to assembly file
         print(self.header)
+        # prepend to start of file
         with open("assembly.tba", 'r+') as file:
             content = file.read()
             file.seek(0, 0)
@@ -43,7 +46,6 @@ class CodeGen:
         
     def check_repeat(self, tok):
         # check to see if a variable is already used
-        
         for item in self.variables:
             if(item[0] == tok.val):
                 # Variable has already been mapped to memory location
@@ -64,20 +66,13 @@ class CodeGen:
         
         return temp_equ
     
-    def e_add(self):
-        temp = 0
+    def conditional_equal(self):
         mem1 = '0'
         mem2 = '0'
         if(self.phrase[0].type == 'IDENTIFIER'):
-            print('HERE')
             mem1 = self.check_repeat(self.phrase[0])
-        elif(self.phrase[0].type == 'NUMBER'):
-            temp = temp + int(self.phrase[0].val)
         if(self.phrase[2].type == 'IDENTIFIER'):
             mem2 = self.check_repeat(self.phrase[2])
-        elif(self.phrase[2].type == 'NUMBER'):
-            temp = temp + int(self.phrase[2].val)
-        
         try:
             first = int(self.phrase[0].val)
         except ValueError:
@@ -88,17 +83,57 @@ class CodeGen:
             second = 0
         
         temp = first + second
-        
+        # both
         if(temp == 0):
             asm = '\tFETCH\tR4, ' + mem1 + '\n'
-            asm = '\tFETCH\tR5, ' + mem2 + '\n'
+            asm = asm + '\tFETCH\tR5, ' + mem2 + '\n'
+            asm = asm + '\tCOMP \tR4, R5\n'
+        elif(temp == first):
+            asm = '\tFETCH\tR4, ' + mem2 + '\n'
+            asm = asm + '\tCOMP \tR4 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        elif(temp == second):
+            asm = '\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\tCOMP \tR4 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        else:
+            asm = '\tLOAD\tR4, ' + hex(first)[2:].rjust(4, '0') + '\n'
+            asm = '\tCOMP \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
+        self.assembly = self.assembly + asm
+        
+        
+        
+    def e_add(self):
+        temp = 0
+        mem1 = '0'
+        mem2 = '0'
+        if(self.phrase[0].type == 'IDENTIFIER'):
+            mem1 = self.check_repeat(self.phrase[0])
+        if(self.phrase[2].type == 'IDENTIFIER'):
+            mem2 = self.check_repeat(self.phrase[2])
+        # check which is a number
+        try:
+            first = int(self.phrase[0].val)
+        except ValueError:
+            first = 0
+        try:
+            second = int(self.phrase[2].val)
+        except ValueError:
+            second = 0
+        
+        temp = first + second
+        # if both are  
+        if(temp == 0):
+            asm = '\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\tFETCH\tR5, ' + mem2 + '\n'
             asm = asm + '\tADD \tR4, R5\n'
+        # if first element is a number and third is a variable
         elif(temp == first):
             asm = '\tFETCH\tR4, ' + mem2 + '\n'
             asm = asm + '\tADD \tR4 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        # if third element is a number and first is a variable
         elif(temp == second):
             asm = '\tFETCH\tR4, ' + mem1 + '\n'
             asm = asm + '\tADD \tR4 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        # if there is no variable, pre-process
         else:
             asm = '\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         self.assembly = self.assembly + asm
@@ -135,6 +170,7 @@ class CodeGen:
             'MAIN'          : self.main_start,
             'INT_DECLARE'   : self.int_declare,
             'E_ADD_RULE'    : self.e_add,
+            'E_EQUALS_RULE' : self.conditional_equal,
         }
         #assemble[rule]
         
