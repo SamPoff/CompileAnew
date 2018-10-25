@@ -45,3 +45,4 @@ print(tree.bracket_repr())
  
 traveler = TreeClimber(0)
 traveler.climb(tree)
+traveler.CodeGen.write_header()

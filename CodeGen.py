@@ -10,7 +10,7 @@ Code generator for Tramelblaze assembly. Utilizes nodes within the AST.
 """
 import re
 import textwrap
-
+import sys
 
 
 class CodeGen:
@@ -20,8 +20,12 @@ class CodeGen:
         self.variables = []
         self.mem_loc = 0
         self.assembly = ""
+        self.assembly = ""
         self.header = ""
-        self.conditionals = [(1,'JMP'),(2,'JMPC'),(3,'JMPNC'),(4,'JMPZ'),(5,'JMPNZ')]
+        self.label = 0
+        self.repeat = 0
+        self.cond_point = 0
+        self.conditionals = ['JMP','JMPC','JMPNC','JMPZ','JMPNZ']
         file = open("assembly.tba","w")
         file.write("")
         file.close()
@@ -53,6 +57,7 @@ class CodeGen:
                     temp_equ = tok.val
                 else:
                     temp_equ = tok.val.upper()+'_'
+                self.repeat = 1
                 return temp_equ
         
         # Add to the variable list, return the new location
@@ -63,9 +68,31 @@ class CodeGen:
             temp_equ = tok.val.upper()+'_'
         self.header = self.header + temp_equ + '\tEQU ' + hex(int(self.mem_loc))[2:].rjust(4, '0') + '\n'
         self.variables.append((tok.val,self.mem_loc))
+        self.repeat = 0
         
         return temp_equ
     
+    def if_statement(self):
+        pointer = self.cond_point
+        if(pointer == 1):
+            pointer = 2
+        elif(pointer == 2):
+            pointer = 1
+        elif(pointer == 3):
+            pointer = 4
+        elif(pointer == 4):
+            pointer = 3
+        asm1 = 'LABEL' + str(self.label) + '\n'
+        asm2 = '\t' + str(self.conditionals[pointer]) + '\tLABEL' + str(self.label) + '\t;if statement\n'
+        self.label = self.label + 1
+        self.assembly = asm2 + self.assembly + asm1
+    
+    def while_loop(self):
+        asm1 = 'LABEL' + str(self.label) + '\n'
+        asm2 = '\t' + str(self.conditionals[self.cond_point][1]) + 'LABEL' + str(self.label) +'\n' 
+        self.label = self.label + 1
+        self.assembly = asm1 + self.assembly + asm2
+        
     def conditional_equal(self):
         mem1 = '0'
         mem2 = '0'
@@ -85,21 +112,20 @@ class CodeGen:
         temp = first + second
         # both
         if(temp == 0):
-            asm = '\tFETCH\tR4, ' + mem1 + '\n'
+            asm = '\tFETCH\tR6, ' + mem1 + '\n'
             asm = asm + '\tFETCH\tR5, ' + mem2 + '\n'
-            asm = asm + '\tCOMP \tR4, R5\n'
+            asm = asm + '\tCOMP, \tR6, R5\n'
         elif(temp == first):
-            asm = '\tFETCH\tR4, ' + mem2 + '\n'
-            asm = asm + '\tCOMP \tR4 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = '\tFETCH\tR6, ' + mem2 + '\n'
+            asm = asm + '\tCOMP, \tR6 ' + hex(temp)[2:].rjust(4, '0') + '\n'
         elif(temp == second):
-            asm = '\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\tCOMP \tR4 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = '\tFETCH\tR6, ' + mem1 + '\n'
+            asm = asm + '\tCOMP, \tR6 ' + hex(temp)[2:].rjust(4, '0') + '\n'
         else:
-            asm = '\tLOAD\tR4, ' + hex(first)[2:].rjust(4, '0') + '\n'
-            asm = '\tCOMP \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
+            asm = '\tLOAD\tR6, ' + hex(first)[2:].rjust(4, '0') + '\n'
+            asm = '\tCOMP, \tR6, ' + hex(second)[2:].rjust(4, '0') + '\n'
         self.assembly = self.assembly + asm
-        
-        
+        self.cond_point = 3   
         
     def e_add(self):
         temp = 0
@@ -128,17 +154,25 @@ class CodeGen:
         # if first element is a number and third is a variable
         elif(temp == first):
             asm = '\tFETCH\tR4, ' + mem2 + '\n'
-            asm = asm + '\tADD \tR4 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = asm + '\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         # if third element is a number and first is a variable
         elif(temp == second):
             asm = '\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\tADD \tR4 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = asm + '\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         # if there is no variable, pre-process
         else:
             asm = '\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         self.assembly = self.assembly + asm
         
-            
+    def assign_statement(self):
+        mem = self.check_repeat(self.phrase[0])
+        if(self.repeat == 1):
+            asm = '\tSTORE\tR4, ' + mem
+            self.assembly = self.assembly + asm + '\n'
+        else:
+            print("ERROR: " + mem + "Variable not declared.")
+            sys.exit(1)
+        
     def int_declare(self):
         mem = self.check_repeat(self.phrase[1])
         print(mem)
@@ -155,10 +189,14 @@ class CodeGen:
         
     def main_start(self):
         # push main on label on top of main function
-        asm = "MAIN\n"
-        self.assembly = asm + self.assembly
+        asm = "\nMAIN\n"
         print(self.assembly)
-        self.file_output()
+        with open("assembly.tba", 'r+') as file:
+            content = file.read()
+            file.seek(0, 0)
+            file.write(asm + content + self.assembly)
+            file.close()
+        self.assembly = ""
 
     def translate(self, rule, phrase):
         self.phrase = phrase
@@ -171,6 +209,9 @@ class CodeGen:
             'INT_DECLARE'   : self.int_declare,
             'E_ADD_RULE'    : self.e_add,
             'E_EQUALS_RULE' : self.conditional_equal,
+            'ASSIGN'        : self.assign_statement,
+            'IF_STATEMENT'  : self.if_statement,
+            'WHILE_LOOP'    : self.while_loop,
         }
         #assemble[rule]
         
