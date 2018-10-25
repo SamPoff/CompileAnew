@@ -20,7 +20,7 @@ class CodeGen:
         self.variables = []
         self.mem_loc = 0
         self.assembly = ""
-        self.assembly = ""
+        self.rel = ""
         self.header = ""
         self.label = 0
         self.repeat = 0
@@ -47,7 +47,20 @@ class CodeGen:
             file.write(self.header + content)
             file.close()
         self.header = ""
-        
+    
+    def rel_switch(self):
+        # reverses the logic for relational statments, e.g. JMPNZ to JMPZ
+        pointer = self.cond_point
+        if(pointer == 1):
+            pointer = 2
+        elif(pointer == 2):
+            pointer = 1
+        elif(pointer == 3):
+            pointer = 4
+        elif(pointer == 4):
+            pointer = 3
+        return pointer
+    
     def check_repeat(self, tok):
         # check to see if a variable is already used
         for item in self.variables:
@@ -72,28 +85,7 @@ class CodeGen:
         
         return temp_equ
     
-    def if_statement(self):
-        pointer = self.cond_point
-        if(pointer == 1):
-            pointer = 2
-        elif(pointer == 2):
-            pointer = 1
-        elif(pointer == 3):
-            pointer = 4
-        elif(pointer == 4):
-            pointer = 3
-        asm1 = 'LABEL' + str(self.label) + '\n'
-        asm2 = '\t' + str(self.conditionals[pointer]) + '\tLABEL' + str(self.label) + '\t;if statement\n'
-        self.label = self.label + 1
-        self.assembly = asm2 + self.assembly + asm1
-    
-    def while_loop(self):
-        asm1 = 'LABEL' + str(self.label) + '\n'
-        asm2 = '\t' + str(self.conditionals[self.cond_point][1]) + 'LABEL' + str(self.label) +'\n' 
-        self.label = self.label + 1
-        self.assembly = asm1 + self.assembly + asm2
-        
-    def conditional_equal(self):
+    def conditional_generic(self):
         mem1 = '0'
         mem2 = '0'
         if(self.phrase[0].type == 'IDENTIFIER'):
@@ -114,19 +106,62 @@ class CodeGen:
         if(temp == 0):
             asm = '\tFETCH\tR6, ' + mem1 + '\n'
             asm = asm + '\tFETCH\tR5, ' + mem2 + '\n'
-            asm = asm + '\tCOMP, \tR6, R5\n'
+            asm = asm + '\tCOMP \tR6, R5\n'
         elif(temp == first):
             asm = '\tFETCH\tR6, ' + mem2 + '\n'
-            asm = asm + '\tCOMP, \tR6 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = asm + '\tCOMP \tR6, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         elif(temp == second):
             asm = '\tFETCH\tR6, ' + mem1 + '\n'
-            asm = asm + '\tCOMP, \tR6 ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = asm + '\tCOMP \tR6, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         else:
             asm = '\tLOAD\tR6, ' + hex(first)[2:].rjust(4, '0') + '\n'
-            asm = '\tCOMP, \tR6, ' + hex(second)[2:].rjust(4, '0') + '\n'
-        self.assembly = self.assembly + asm
+            asm = '\tCOMP \tR6, ' + hex(second)[2:].rjust(4, '0') + '\n'
+        return asm
+    
+    def if_statement(self):
+        pointer = self.rel_switch()
+        asm1 = 'LABEL' + str(self.label) + '\n'
+        asm2 = self.rel + '\t' + str(self.conditionals[pointer]) + '\tLABEL' + str(self.label) + '\t;if statement\n'
+        self.label = self.label + 1
+        self.assembly = asm2 + self.assembly + asm1
+    
+    def while_loop(self):
+        asm1 = 'LABEL' + str(self.label) + '\n'
+        asm2 = self.rel + '\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\n' 
+        self.label = self.label + 1
+        self.assembly = asm1 + self.assembly + asm2
+    
+    def for_loop(self):
+        asm1 = 'LABEL' + str(self.label) + '\n'
+        asm2 = '\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\n' 
+        self.label = self.label + 1
+        self.assembly = asm1 + self.assembly + asm2
+    
+    def conditional_less_than(self):
+        self.rel = self.conditional_generic()
+        self.cond_point = 1
+    
+    def conditional_greater_than(self):
+        self.rel = self.conditional_generic()
+        self.cond_point = 2
+    
+    def conditional_equal(self):
+        self.rel = self.conditional_generic()
         self.cond_point = 3   
-        
+    
+    def conditional_not_equal(self):
+        self.rel = self.conditional_generic()
+        self.cond_point = 4
+      
+    def post_inc(self):
+        mem = self.check_repeat(self.phrase[0])
+        if(self.repeat == 1):
+            asm = '\tFETCH\tR2, ' + mem + '\n\tADD \tR2, 0001\n'
+            self.assembly = self.assembly + asm 
+        else:
+            print("ERROR: " + mem + "Variable not declared.")
+            sys.exit(1)
+            
     def e_add(self):
         temp = 0
         mem1 = '0'
@@ -209,9 +244,14 @@ class CodeGen:
             'INT_DECLARE'   : self.int_declare,
             'E_ADD_RULE'    : self.e_add,
             'E_EQUALS_RULE' : self.conditional_equal,
+            'E_LESS_THAN'   : self.conditional_less_than,
+            'E_GREATER_THAN': self.conditional_greater_than,
+            
             'ASSIGN'        : self.assign_statement,
             'IF_STATEMENT'  : self.if_statement,
             'WHILE_LOOP'    : self.while_loop,
+            'POST_INC_RULE' : self.post_inc,
+            
         }
         #assemble[rule]
         
