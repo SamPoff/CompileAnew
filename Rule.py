@@ -40,6 +40,8 @@ main_funct = Rule('(TYPE_INT)(MAIN)(LP)(RP)(LB)(STATEMENT)*?(RB)', 'FUNCT_DECLAR
 int_declare = Rule('((TYPE_INT)(IDENTIFIER)(EQUALSIGN)(E|UE|NUMBER|IDENTIFIER)(SEMICOLON)|'
                        '(TYPE_INT)(IDENTIFIER)(SEMICOLON))', 'STATEMENT', 'INT_DECLARE', None)
 
+port_declare = Rule('(TYPE_PORT)(IDENTIFIER)(EQUALSIGN)(NUMBER)(SEMICOLON)', 'STATEMENT', 'PORT_DECLARE', None)
+
 # if( some t/f expression ) {}
 if_statement = Rule('((IF)(LP)(E|UE|NUMBER|IDENTIFIER)(RP)(LB)(STATEMENT)*?(RB)|'
                          '(IF)(LP)(E|UE|NUMBER|IDENTIFIER)(RP)(STATEMENT))', 'STATEMENT', 'IF_STATEMENT', None)
@@ -71,7 +73,7 @@ post_dec_rule = Rule('(IDENTIFIER)(DOUBLE_MINUS)', 'UE', 'POST_DEC_RULE', 20)
 pre_dec_rule = Rule('(DOUBLE_MINUS)(IDENTIFIER)', 'UE', 'PRE_DEC_RULE', 20)
 
 # unary operation ;
-unary_rule = Rule('UE(SEMICOLON)', 'STATEMENT', 'UNARY_RULE', None)
+unary_rule = Rule('(UE)(SEMICOLON)', 'STATEMENT', 'UNARY_RULE', None)
 
 # something == something
 rel_equal = Rule('(E|UE|NUMBER|IDENTIFIER)(EQUALVALUE)(E|UE|NUMBER|IDENTIFIER)', 'E', 'E_EQUALS_RULE', None)
@@ -82,6 +84,9 @@ rel_less_than = Rule('(E|UE|NUMBER|IDENTIFIER)(LESSTHAN)(E|UE|NUMBER|IDENTIFIER)
 # something > something
 rel_greater_than = Rule('(E|UE|NUMBER|IDENTIFIER)(GREATERTHAN)(E|UE|NUMBER|IDENTIFIER)', 'E', 'E_GREATER_THAN', None)
 
+# output(something, somewhere);
+port_output = Rule('(OUTPUT)(LP)(IDENTIFIER)(COMMA)(IDENTIFIER)(RP)(SEMICOLON)', 'STATEMENT', 'PORT_OUTPUT', None)
+port_input = Rule('(INPUT)(LP)(IDENTIFIER)(COMMA)(IDENTIFIER)(RP)(SEMICOLON)', 'STATEMENT', 'PORT_INPUT', None)
 # # i = k + l;
 # all_ids = Rule('(IDENTIFIER)(EQUALSIGN)(IDENTIFIER)(PLUS)(IDENTIFIER)', 'E', 'E_ALL_IDENTIFIERS', None)
 
@@ -96,6 +101,7 @@ rel_greater_than = Rule('(E|UE|NUMBER|IDENTIFIER)(GREATERTHAN)(E|UE|NUMBER|IDENT
 rules = [
     main_funct,
     int_declare,
+    port_declare,
     assign_rule,
     if_statement,
     for_loop,
@@ -108,7 +114,9 @@ rules = [
     unary_rule,
     rel_less_than,
     rel_greater_than,
-    rel_equal
+    rel_equal,
+    port_output,
+    port_input,
     ]
 """
 main_func_dec_cont,

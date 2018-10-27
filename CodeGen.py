@@ -25,7 +25,7 @@ class CodeGen:
         self.label = 0
         self.repeat = 0
         self.cond_point = 0
-        self.conditionals = ['JMP','JMPC','JMPNC','JMPZ','JMPNZ']
+        self.conditionals = ['JUMP','JUMPC','JUMPNC','JUMPZ','JUMPNZ']
         file = open("assembly.tba","w")
         file.write("")
         file.close()
@@ -73,7 +73,7 @@ class CodeGen:
                 self.repeat = 1
                 return temp_equ
         
-        # Add to the variable list, return the new location
+        # \t\tADD to the variable list, return the new location
         self.mem_loc = self.mem_loc + 1
         if(tok.val.isupper()):
             temp_equ = tok.val
@@ -104,36 +104,99 @@ class CodeGen:
         temp = first + second
         # both
         if(temp == 0):
-            asm = '\tFETCH\tR6, ' + mem1 + '\n'
-            asm = asm + '\tFETCH\tR5, ' + mem2 + '\n'
-            asm = asm + '\tCOMP \tR6, R5\n'
+            asm = '\t\t\tFETCH\tR6, ' + mem1 + '\n'
+            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+            asm = asm + '\t\t\tCOMP \tR6, R5\n'
         elif(temp == first):
-            asm = '\tFETCH\tR6, ' + mem2 + '\n'
-            asm = asm + '\tCOMP \tR6, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = '\t\t\tFETCH\tR6, ' + mem2 + '\n'
+            asm = asm + '\t\t\tCOMP \tR6, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         elif(temp == second):
-            asm = '\tFETCH\tR6, ' + mem1 + '\n'
-            asm = asm + '\tCOMP \tR6, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = '\t\t\tFETCH\tR6, ' + mem1 + '\n'
+            asm = asm + '\t\t\tCOMP \tR6, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         else:
-            asm = '\tLOAD\tR6, ' + hex(first)[2:].rjust(4, '0') + '\n'
-            asm = '\tCOMP \tR6, ' + hex(second)[2:].rjust(4, '0') + '\n'
+            asm = '\t\t\tLOAD\tR6, ' + hex(first)[2:].rjust(4, '0') + '\n'
+            asm = '\t\t\tCOMP \tR6, ' + hex(second)[2:].rjust(4, '0') + '\n'
         return asm
     
+    def port_declare(self):
+        for item in self.variables:
+            if(item[0] == self.phrase[1]):
+                # Variable has already been mapped to memory location
+                print("ERROR: " + item[0] + "Variable already declared.")
+                sys.exit(1)
+        temp_equ = ''
+        if(self.phrase[1].val.isupper()):
+            temp_equ = self.phrase[1].val
+        else:
+            temp_equ = self.phrase[1].val.upper()+'_'
+        self.header = self.header + temp_equ + '\tEQU ' + hex(int(self.phrase[3].val))[2:].rjust(4, '0') + '\n'
+            
+    def port_output(self):
+        # check if outputing to variable or number
+        try:
+            temp = int(self.phrase[4].val)
+            if(temp > 15):
+                print("ERROR: " + str(temp) + "port out of range.")
+                sys.exit(1)        
+        except ValueError:
+            if(self.phrase[5].val.isupper()):
+                temp = self.phrase[4].val
+            else:
+                temp = self.phrase[4].val.upper()+'_'
+        # check if mem location is lowercase or uppercase
+        if(self.phrase[2].val.isupper()):
+            var = self.phrase[2].val
+        else:
+            var = self.phrase[2].val.upper()+'_'
+        asm = '\t\t\tFETCH\tR7, ' + var + '\n'
+        asm = asm + '\t\t\tOUTPUT\tR7, '+ str(temp) +'\n'            
+        self.assembly = self.assembly + asm
+    
+    def port_input(self):
+        # check if outputing to variable or number
+        try:
+            temp = int(self.phrase[4].val)
+            if(temp > 15):
+                print("ERROR: " + str(temp) + "port out of range.")
+                sys.exit(1)        
+        except ValueError:
+            if(self.phrase[5].val.isupper()):
+                temp = self.phrase[4].val
+            else:
+                temp = self.phrase[4].val.upper()+'_'
+        # check if mem location is lowercase or uppercase
+        if(self.phrase[2].val.isupper()):
+            var = self.phrase[2].val
+        else:
+            var = self.phrase[2].val.upper()+'_'
+        asm = '\t\t\tINPUT\tR7, '+ str(temp) +'\n'            
+        asm = asm + '\t\t\tSTORE\tR7, ' + var + '\n'        
+        self.assembly = self.assembly + asm
+        
     def if_statement(self):
         pointer = self.rel_switch()
         asm1 = 'LABEL' + str(self.label) + '\n'
-        asm2 = self.rel + '\t' + str(self.conditionals[pointer]) + '\tLABEL' + str(self.label) + '\t;if statement\n'
+        asm2 = self.rel + '\t\t\t' + str(self.conditionals[pointer]) + '\tLABEL' + str(self.label) + '\t;if statement\n'
         self.label = self.label + 1
         self.assembly = asm2 + self.assembly + asm1
     
     def while_loop(self):
         asm1 = 'LABEL' + str(self.label) + '\n'
-        asm2 = self.rel + '\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\n' 
+        asm2 = self.rel + '\t\t\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\t;while loop\n' 
         self.label = self.label + 1
         self.assembly = asm1 + self.assembly + asm2
     
     def for_loop(self):
         asm1 = 'LABEL' + str(self.label) + '\n'
-        asm2 = '\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\n' 
+        asm2 = self.rel + '\t\t\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\t;while loop\n' 
+        self.label = self.label + 1
+        self.assembly = asm1 + self.assembly + asm2
+    
+        
+    
+    def for_loop(self):
+        asm1 = 'LABEL' + str(self.label) + '\n'
+        asm2 = self.rel + '\t\t\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\n' 
         self.label = self.label + 1
         self.assembly = asm1 + self.assembly + asm2
     
@@ -156,7 +219,7 @@ class CodeGen:
     def post_inc(self):
         mem = self.check_repeat(self.phrase[0])
         if(self.repeat == 1):
-            asm = '\tFETCH\tR2, ' + mem + '\n\tADD \tR2, 0001\n'
+            asm = '\t\t\tFETCH\tR2, ' + mem + '\n\t\t\tADD \tR2, 0001\n'
             self.assembly = self.assembly + asm 
         else:
             print("ERROR: " + mem + "Variable not declared.")
@@ -183,26 +246,26 @@ class CodeGen:
         temp = first + second
         # if both are  
         if(temp == 0):
-            asm = '\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\tFETCH\tR5, ' + mem2 + '\n'
-            asm = asm + '\tADD \tR4, R5\n'
+            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+            asm = asm + '\t\t\tADD \tR4, R5\n'
         # if first element is a number and third is a variable
         elif(temp == first):
-            asm = '\tFETCH\tR4, ' + mem2 + '\n'
-            asm = asm + '\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+            asm = asm + '\t\t\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         # if third element is a number and first is a variable
         elif(temp == second):
-            asm = '\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\t\t\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         # if there is no variable, pre-process
         else:
-            asm = '\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         self.assembly = self.assembly + asm
         
     def assign_statement(self):
         mem = self.check_repeat(self.phrase[0])
         if(self.repeat == 1):
-            asm = '\tSTORE\tR4, ' + mem
+            asm = '\t\t\tSTORE\tR4, ' + mem
             self.assembly = self.assembly + asm + '\n'
         else:
             print("ERROR: " + mem + "Variable not declared.")
@@ -211,7 +274,7 @@ class CodeGen:
     def int_declare(self):
         mem = self.check_repeat(self.phrase[1])
         print(mem)
-        asm = '\tLOAD\tR1, '
+        asm = '\t\t\tLOAD\tR1, '
         if(len(self.phrase) > 3):
             if(self.phrase[3].val == ';'):
                 asm = asm + "R4\n"
@@ -219,7 +282,7 @@ class CodeGen:
                 asm = asm + hex(int(self.phrase[3].val))[2:].rjust(4, '0') + '\n'
         else:
             asm = asm + '0000\n'
-        asm = asm + '\tSTORE\tR1, ' + mem + '\n'
+        asm = asm + '\t\t\tSTORE\tR1, ' + mem + '\n'
         self.assembly = self.assembly + asm
         
     def main_start(self):
@@ -242,14 +305,17 @@ class CodeGen:
         assemble = {
             'MAIN'          : self.main_start,
             'INT_DECLARE'   : self.int_declare,
-            'E_ADD_RULE'    : self.e_add,
+            'E_ADD_RULE': self.e_add,
             'E_EQUALS_RULE' : self.conditional_equal,
             'E_LESS_THAN'   : self.conditional_less_than,
             'E_GREATER_THAN': self.conditional_greater_than,
-            
+            'PORT_DECLARE'  : self.port_declare,
+            'PORT_OUTPUT'   : self.port_output,
+            'PORT_INPUT'    : self.port_input,
             'ASSIGN'        : self.assign_statement,
             'IF_STATEMENT'  : self.if_statement,
             'WHILE_LOOP'    : self.while_loop,
+            'FOR_LOOP'     : self.for_loop,
             'POST_INC_RULE' : self.post_inc,
             
         }
