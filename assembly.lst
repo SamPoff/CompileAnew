@@ -1,0 +1,92 @@
+               A_	EQU 0001
+               K_	EQU 0001
+               I_	EQU 0002
+               J_	EQU 0003
+               Z_	EQU 0004
+               
+               MAIN
+               			LOAD	R1, 000a
+0000 AE01 000A
+               			STORE	R1, K_
+0002 F401 0001
+               			LOAD	R4, 0006
+0004 AE04 0006
+               			LOAD	R1, R4
+3041
+               			STORE	R1, I_
+0007 F401 0002
+               			FETCH	R4, I_
+0009 F004 0002
+               			ADD 	R4, 0002
+000B 8204 0002
+               			LOAD	R1, R4
+3041
+               			STORE	R1, J_
+000E F401 0003
+               			FETCH	R6, I_
+0010 F006 0002
+               			COMP 	R6, 0006
+0012 9806 0006
+               			JUMPNZ	LABEL0	;if statement
+0014 AC00 0022
+               			FETCH	R4, I_
+0016 F004 0002
+               			ADD 	R4, 0002
+0018 8204 0002
+               			STORE	R4, J_
+001A F404 0003
+               			FETCH	R4, K_
+001C F004 0001
+               			ADD 	R4, 0004
+001E 8204 0004
+               			STORE	R4, K_
+0020 F404 0001
+               LABEL0
+               LABEL1
+               			FETCH	R4, I_
+0022 F004 0002
+               			ADD 	R4, 0001
+0024 8204 0001
+               			STORE	R4, I_
+0026 F404 0002
+               			FETCH	R4, I_
+0028 F004 0002
+               			ADD 	R4, 0002
+002A 8204 0002
+               			STORE	R4, I_
+002C F404 0002
+               			FETCH	R6, J_
+002E F006 0003
+               			COMP 	R6, 000c
+0030 9806 000C
+               			JUMPC	LABEL1	;while loop
+0032 A600 0022
+               			FETCH	R7, I_
+0034 F007 0002
+               			OUTPUT	R7, A_
+0036 B807 0001
+               			INPUT	R7, A_
+0038 A207 0001
+               			STORE	R7, I_
+003A F407 0002
+               LABEL2
+               			LOAD	R1, 0000
+003C AE01 0000
+               			STORE	R1, Z_
+003E F401 0004
+               			FETCH	R2, Z_
+0040 F002 0004
+               			ADD 	R2, 0001
+0042 8202 0001
+               			FETCH	R4, K_
+0044 F004 0001
+               			ADD 	R4, 0001
+0046 8204 0001
+               			STORE	R4, K_
+0048 F404 0001
+               			FETCH	R6, Z_
+004A F006 0004
+               			COMP 	R6, 000a
+004C 9806 000A
+               			JUMPC	LABEL2
+004E A600 003c
