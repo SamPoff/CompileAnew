@@ -5,7 +5,7 @@ Created on Oct 5, 2018
 @author: Samuel Poff
 '''
 
-import re
+import ParseNode 
 # from ParseNode import ParseNode
 
 class ParseException(Exception):
@@ -15,6 +15,13 @@ class ParseException(Exception):
         self.stack = stack
 
     def __str__(self):
-        return "Error parsing input.\nEnd tree: " + str(self.stack)
+        print("Error parsing input.\nEnd tree: ",end='')
+        for item in self.stack :
+            if(type(item) != ParseNode.ParseNode):
+                try:
+                    print(item.val)
+                except TypeError:
+                    print()
+        return " " 
 
 

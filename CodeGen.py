@@ -22,12 +22,15 @@ class CodeGen:
         self.assembly = ""
         self.rel = ""
         self.header = ""
+        self.footer = ""
         self.label = 0
         self.repeat = 0
+        self.else_flag = 0
         self.cond_point = 0
         self.conditionals = ['JUMP','JUMPC','JUMPNC','JUMPZ','JUMPNZ']
         file = open("assembly.tba","w")
         file.write("")
+        self.file_pos = file.tell()
         file.close()
         
     def file_output(self):
@@ -47,6 +50,14 @@ class CodeGen:
             file.write(self.header + content)
             file.close()
         self.header = ""
+    
+    def write_footer(self):
+        # write header to assembly file
+        print(self.footer)
+        file = open("assembly.tba","a")
+        file.write(self.footer)
+        file.close()
+        self.footer = ""
     
     def rel_switch(self):
         # reverses the logic for relational statments, e.g. JMPNZ to JMPZ
@@ -178,27 +189,36 @@ class CodeGen:
         asm1 = 'LABEL' + str(self.label) + '\n'
         asm2 = self.rel + '\t\t\t' + str(self.conditionals[pointer]) + '\tLABEL' + str(self.label) + '\t;if statement\n'
         self.label = self.label + 1
-        self.assembly = asm2 + self.assembly + asm1
+        if(self.else_flag == 1):
+            asm3 = '\t\t\tJMP\tLABEL'+ str(self.label) + '\n'
+            self.assembly = asm2 + self.assembly + asm3 + asm1
+        else:
+            self.assembly = asm2 + self.assembly + asm1
+    
+    def else_statement(self):
+        asm1 = 'LABEL' + str(self.label) + '\n'
+        self.assembly = self.assembly + asm1
+        self.label = self.label + 1
+    
+    def if_else(self):
+        self.file_output()
     
     def while_loop(self):
-        asm1 = 'LABEL' + str(self.label) + '\n'
-        asm2 = self.rel + '\t\t\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\t;while loop\n' 
+        label1 = self.label
+        self.label = self.label + 1
+        label2 = self.label
+        asm1 = '\t\t\tJUMP\tLABEL' + str(label2) + '\t;while loop check condition\n' + 'LABEL' + str(label1) + '\n'
+        asm2 = 'LABEL' + str(label2) + '\n' + self.rel + '\t\t\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(label1) +'\t;while loop\n' 
         self.label = self.label + 1
         self.assembly = asm1 + self.assembly + asm2
     
     def for_loop(self):
         asm1 = 'LABEL' + str(self.label) + '\n'
-        asm2 = self.rel + '\t\t\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\t;while loop\n' 
+        asm2 = self.rel + '\t\t\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\t;for loop\n' 
         self.label = self.label + 1
         self.assembly = asm1 + self.assembly + asm2
     
         
-    
-    def for_loop(self):
-        asm1 = 'LABEL' + str(self.label) + '\n'
-        asm2 = self.rel + '\t\t\t' + str(self.conditionals[self.cond_point]) + '\tLABEL' + str(self.label) +'\n' 
-        self.label = self.label + 1
-        self.assembly = asm1 + self.assembly + asm2
     
     def conditional_less_than(self):
         self.rel = self.conditional_generic()
@@ -264,8 +284,13 @@ class CodeGen:
         
     def assign_statement(self):
         mem = self.check_repeat(self.phrase[0])
+        asm = ""
         if(self.repeat == 1):
-            asm = '\t\t\tSTORE\tR4, ' + mem
+            if(self.phrase[2].type == 'NUMBER'):
+                temp = int(self.phrase[2].val)
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            asm = asm + '\t\t\tSTORE\tR4, ' + mem
+            
             self.assembly = self.assembly + asm + '\n'
         else:
             print("ERROR: " + mem + "Variable not declared.")
@@ -290,11 +315,36 @@ class CodeGen:
         asm = "\nMAIN\n"
         print(self.assembly)
         with open("assembly.tba", 'r+') as file:
+            file.seek(self.file_pos)
             content = file.read()
-            file.seek(0, 0)
-            file.write(asm + content + self.assembly)
+            file.seek(self.file_pos)
+            file.write(asm + content + self.assembly + '\n\n')
+            self.file_pos = file.tell()
             file.close()
         self.assembly = ""
+        #self.file_output()
+    
+    def isr_start(self):
+        asm1 = '\t\t\tADDRESS\t0300\n' + '\nISR\n'
+        asm2 = '\t\t\tRETEN'
+        self.assembly = self.assembly + asm2
+        self.footer = self.footer + "\t\t\tADDRESS\t0FFE\n\n"+"\t\t\tJUMP\tISR"+"\n\n\t\t\tEND"
+        with open("assembly.tba", 'r+') as file:
+            file.seek(self.file_pos)
+            content = file.read()
+            file.seek(self.file_pos)
+            file.write(asm1 + content + self.assembly + '\n\n')
+            self.file_pos = file.tell()
+            file.close()
+        self.assembly = ""
+        
+    def enable_interrupt(self):
+        asm = '\t\t\tENINT\n'
+        self.assembly = self.assembly + asm
+        
+    def disable_interrupt(self):
+        asm = '\t\t\tDISINT\n'
+        self.assembly = self.assembly + asm
 
     def translate(self, rule, phrase):
         self.phrase = phrase
@@ -303,20 +353,25 @@ class CodeGen:
         #print(rule)
         
         assemble = {
-            'MAIN'          : self.main_start,
-            'INT_DECLARE'   : self.int_declare,
-            'E_ADD_RULE': self.e_add,
-            'E_EQUALS_RULE' : self.conditional_equal,
-            'E_LESS_THAN'   : self.conditional_less_than,
-            'E_GREATER_THAN': self.conditional_greater_than,
-            'PORT_DECLARE'  : self.port_declare,
-            'PORT_OUTPUT'   : self.port_output,
-            'PORT_INPUT'    : self.port_input,
-            'ASSIGN'        : self.assign_statement,
-            'IF_STATEMENT'  : self.if_statement,
-            'WHILE_LOOP'    : self.while_loop,
-            'FOR_LOOP'     : self.for_loop,
-            'POST_INC_RULE' : self.post_inc,
+            'MAIN'              : self.main_start,
+            'ISR'               : self.isr_start,
+            'INT_DECLARE'       : self.int_declare,
+            'ENABLE_INTERRUPT'  : self.enable_interrupt,
+            'DISABLE_INTERRUPT' : self.disable_interrupt,
+            'E_ADD_RULE'        : self.e_add,
+            'E_EQUALS_RULE'     : self.conditional_equal,
+            'E_LESS_THAN'       : self.conditional_less_than,
+            'E_GREATER_THAN'    : self.conditional_greater_than,
+            'PORT_DECLARE'      : self.port_declare,
+            'PORT_OUTPUT'       : self.port_output,
+            'PORT_INPUT'        : self.port_input,
+            'ASSIGN'            : self.assign_statement,
+            'IF_STATEMENT'      : self.if_statement,
+            'ELSE_STATEMENT'    : self.else_statement,
+            'IF_ELSE_STATEMENT' : self.if_else,
+            'WHILE_LOOP'        : self.while_loop,
+            'FOR_LOOP'          : self.for_loop,
+            'POST_INC_RULE'     : self.post_inc,
             
         }
         #assemble[rule]

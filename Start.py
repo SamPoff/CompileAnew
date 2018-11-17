@@ -41,8 +41,21 @@ print('\n\n\n')
 
 print(tree)
 print("\n\n\n\n")
-print(tree.bracket_repr())
- 
+for node in tree:
+    if(type(node) == ParseNode):
+        print(node.bracket_repr())
+
+#declkare iterator and code generator 
 traveler = TreeClimber(0)
-traveler.climb(tree)
+
+'''
+Refer to TreeClimber class. The tree is broken into functions,
+tree climber can break down each singular function to code generate. This 
+process is done by iterating through the tree list, which is a list of 
+functions that make up the program.
+'''
+for node in tree:
+    if(type(node) == ParseNode):
+        traveler.climb(node)
 traveler.CodeGen.write_header()
+traveler.CodeGen.write_footer()

@@ -22,8 +22,11 @@ class TreeClimber:
     def climb(self, tree):
         if(tree.children):
             print(tree.rule)
-        if(tree.rule.new == 'FOR_LOOP' or tree.rule.new == 'IF_STATEMENT' or tree.rule.new == 'WHILE_LOOP'):
+        if(tree.rule.new == 'IF_ELSE_STATEMENT'):
+            self.CodeGen.else_flag = 1
+        if(tree.rule.new == 'FOR_LOOP' or tree.rule.new == 'IF_STATEMENT'or tree.rule.new == 'ELSE_STATEMENT' or tree.rule.new == 'WHILE_LOOP'):
             self.CodeGen.file_output()
+        
         for child in tree.children:
             if(type(child) == ParseNode):
                 # go to the deepest node

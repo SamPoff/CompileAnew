@@ -12,9 +12,13 @@ class NewCompile(object):
             self.rules = rules = [
     ('(\/\*[\w\'\s\r\n\*]*\*\/)|(\/\/[\w\s\']*)|(\<![\-\-\s\w\>\/]*\>)',    'COMMENT', None),
     ('\d+',                         'NUMBER', 60),
+    ('Interrupt_Handler',           'ISR_HANDLER', 60),
+    ('interrupt',                   'INTERRUPT', 60),
     ('int',                         'TYPE_INT', 60),
     ('char',                        'TYPE_CHAR', 60),
     ('port',                        'TYPE_PORT', 60),
+    ('enable',                      'ENABLE', 60),
+    ('disable',                     'DISABLE', 60),
     ('input',                       'INPUT', 60),
     ('output',                      'OUTPUT', 60),
     ('main',                        'MAIN', None),

@@ -74,6 +74,7 @@ class ParseNode:
         stack = ""
         # stores the tree itself in an analogous stack
         tree_stack = [start_symbol]
+       
         """
             Loop through list of rules applying each to the current stack. If no
             rules match, shift on the next token to the stack.
@@ -140,10 +141,12 @@ class ParseNode:
                     tree_stack.append(tokens[0])
                     tokens = tokens[1:]
         
+        correct = re.compile('(FUNCT_DECLARE)(FUNCT_DECLARE)*')
+        print(stack)
         # when we're done, we should have the start symbol (placeholder) left in the stack
-        if tree_stack[0] == start_symbol:
+        if tree_stack[0] == start_symbol and correct.match(stack):
             print(stack)
-            return node
+            return tree_stack
         else:
             raise ParseException(tree_stack)
     
