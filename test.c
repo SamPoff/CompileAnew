@@ -1,20 +1,23 @@
+/*this is a comment*/
 
 int main(){
-    port a = 1;
+    //hello
+    port a = 0x0001;
     int k = 10;
     int i = 5 + 1;
     int j = i + 2;
     enable interrupt;
     if(i == 6){
-        j = i + 2;
-        k = k + 4;
+        j = i & 2;
+        k = k ^ 4;
     }
+    // Here's another
     else{
         j = 1;
         k = 2;
     }
     while(j < 12){
-        i = i + 1;
+        i = i | 2;
         i = i + 2;
     }
     for(int z = 0; z < 10; z++){

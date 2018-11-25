@@ -10,7 +10,7 @@ class NewCompile(object):
         def __init__(self, filename):  
             self.filename = filename
             self.rules = rules = [
-    ('(\/\*[\w\'\s\r\n\*]*\*\/)|(\/\/[\w\s\']*)|(\<![\-\-\s\w\>\/]*\>)',    'COMMENT', None),
+    ('0[xX][0-9a-fA-F]+',           'HEX', 60),
     ('\d+',                         'NUMBER', 60),
     ('Interrupt_Handler',           'ISR_HANDLER', 60),
     ('interrupt',                   'INTERRUPT', 60),
@@ -27,6 +27,7 @@ class NewCompile(object):
     ('if',                          'IF', 10),
     ('for',                         'FOR', 10),
     ('while',                       'WHILE', 10),
+    ('define',                      'DEFINE', 60),
     ('[_a-zA-Z][_a-zA-Z0-9]{0,31}', 'IDENTIFIER', 60),
     ('\(',                          'LP', 40),
     ('\)',                          'RP', 40),
@@ -41,6 +42,9 @@ class NewCompile(object):
     ('\>',                          'GREATERTHAN', 20),
     ('\+',                          'PLUS', 10),
     ('\-',                          'MINUS', 10),
+    ('\|',                          'BIT_OR', 10),
+    ('\&',                          'BIT_AND', 10),
+    ('\^',                          'BIT_XOR', 10),
     ('==',                          'EQUALVALUE', 20),
     ('=',                           'EQUALSIGN', 30),
     (',',                           'COMMA', 30),

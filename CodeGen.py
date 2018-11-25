@@ -104,11 +104,11 @@ class CodeGen:
         if(self.phrase[2].type == 'IDENTIFIER'):
             mem2 = self.check_repeat(self.phrase[2])
         try:
-            first = int(self.phrase[0].val)
+            first = int(self.phrase[0].val, 0)
         except ValueError:
             first = 0
         try:
-            second = int(self.phrase[2].val)
+            second = int(self.phrase[2].val, 0)
         except ValueError:
             second = 0
         
@@ -140,12 +140,12 @@ class CodeGen:
             temp_equ = self.phrase[1].val
         else:
             temp_equ = self.phrase[1].val.upper()+'_'
-        self.header = self.header + temp_equ + '\tEQU ' + hex(int(self.phrase[3].val))[2:].rjust(4, '0') + '\n'
+        self.header = self.header + temp_equ + '\tEQU ' + hex(int(self.phrase[3].val, 0))[2:].rjust(4, '0') + '\n'
             
     def port_output(self):
         # check if outputing to variable or number
         try:
-            temp = int(self.phrase[4].val)
+            temp = int(self.phrase[4].val, 0)
             if(temp > 15):
                 print("ERROR: " + str(temp) + "port out of range.")
                 sys.exit(1)        
@@ -166,7 +166,7 @@ class CodeGen:
     def port_input(self):
         # check if outputing to variable or number
         try:
-            temp = int(self.phrase[4].val)
+            temp = int(self.phrase[4].val, 0)
             if(temp > 15):
                 print("ERROR: " + str(temp) + "port out of range.")
                 sys.exit(1)        
@@ -255,11 +255,11 @@ class CodeGen:
             mem2 = self.check_repeat(self.phrase[2])
         # check which is a number
         try:
-            first = int(self.phrase[0].val)
+            first = int(self.phrase[0].val, 0)
         except ValueError:
             first = 0
         try:
-            second = int(self.phrase[2].val)
+            second = int(self.phrase[2].val, 0)
         except ValueError:
             second = 0
         
@@ -281,13 +281,126 @@ class CodeGen:
         else:
             asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
         self.assembly = self.assembly + asm
+     
+    def e_and(self):
+        temp = 0
+        mem1 = '0'
+        mem2 = '0'
+        if(self.phrase[0].type == 'IDENTIFIER'):
+            print('HERE\n\n')
+            mem1 = self.check_repeat(self.phrase[0])
+        if(self.phrase[2].type == 'IDENTIFIER'):
+            print('HERE\n\n')
+            mem2 = self.check_repeat(self.phrase[2])
+        # check which is a number
+        try:
+            first = int(self.phrase[0].val, 0)
+        except ValueError:
+            first = 0
+        try:
+            second = int(self.phrase[2].val, 0)
+        except ValueError:
+            second = 0
+        
+        temp = first & second
+        # if both are  
+        if(first == 0 and second == 0):
+            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+            asm = asm + '\t\t\tAND \tR4, R5\n'
+        # if first element is a number and third is a variable
+        elif(temp != first):
+            asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+            asm = asm + '\t\t\tAND \tR4, ' + hex(first)[2:].rjust(4, '0') + '\n'
+        # if third element is a number and first is a variable
+        elif(temp != second):
+            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\t\t\tAND \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
+        # if there is no variable, pre-process
+        else:
+            asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        self.assembly = self.assembly + asm
+    
+    def e_or(self):
+        temp = 0
+        mem1 = '0'
+        mem2 = '0'
+        if(self.phrase[0].type == 'IDENTIFIER'):
+            mem1 = self.check_repeat(self.phrase[0])
+        if(self.phrase[2].type == 'IDENTIFIER'):
+            mem2 = self.check_repeat(self.phrase[2])
+        # check which is a number
+        try:
+            first = int(self.phrase[0].val, 0)
+        except ValueError:
+            first = 0
+        try:
+            second = int(self.phrase[2].val, 0)
+        except ValueError:
+            second = 0
+        
+        temp = first | second
+        # if both are  
+        if(first == 0 and second == 0):
+            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+            asm = asm + '\t\t\tOR  \tR4, R5\n'
+        # if first element is a number and third is a variable
+        elif(temp == first):
+            asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+            asm = asm + '\t\t\tOR  \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        # if third element is a number and first is a variable
+        elif(temp == second):
+            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\t\t\tOR  \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        # if there is no variable, pre-process
+        else:
+            asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        self.assembly = self.assembly + asm
+    
+    def e_xor(self):
+        temp = 0
+        mem1 = '0'
+        mem2 = '0'
+        if(self.phrase[0].type == 'IDENTIFIER'):
+            mem1 = self.check_repeat(self.phrase[0])
+        if(self.phrase[2].type == 'IDENTIFIER'):
+            mem2 = self.check_repeat(self.phrase[2])
+        # check which is a number
+        try:
+            first = int(self.phrase[0].val, 0)
+        except ValueError:
+            first = 0
+        try:
+            second = int(self.phrase[2].val, 0)
+        except ValueError:
+            second = 0
+        
+        temp = first ^ second
+        # if both are  
+        if(first == 0 and second == 0):
+            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+            asm = asm + '\t\t\tXOR \tR4, R5\n'
+        # if first element is a number and third is a variable
+        elif(temp == first):
+            asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+            asm = asm + '\t\t\tXOR \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        # if third element is a number and first is a variable
+        elif(temp == second):
+            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+            asm = asm + '\t\t\tXOR \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        # if there is no variable, pre-process
+        else:
+            asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        self.assembly = self.assembly + asm
         
     def assign_statement(self):
         mem = self.check_repeat(self.phrase[0])
         asm = ""
         if(self.repeat == 1):
             if(self.phrase[2].type == 'NUMBER'):
-                temp = int(self.phrase[2].val)
+                temp = int(self.phrase[2].val, 0)
                 asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
             asm = asm + '\t\t\tSTORE\tR4, ' + mem
             
@@ -304,7 +417,7 @@ class CodeGen:
             if(self.phrase[3].val == ';'):
                 asm = asm + "R4\n"
             else:          
-                asm = asm + hex(int(self.phrase[3].val))[2:].rjust(4, '0') + '\n'
+                asm = asm + hex(int(self.phrase[3].val, 0))[2:].rjust(4, '0') + '\n'
         else:
             asm = asm + '0000\n'
         asm = asm + '\t\t\tSTORE\tR1, ' + mem + '\n'
@@ -359,6 +472,9 @@ class CodeGen:
             'ENABLE_INTERRUPT'  : self.enable_interrupt,
             'DISABLE_INTERRUPT' : self.disable_interrupt,
             'E_ADD_RULE'        : self.e_add,
+            'E_XOR_RULE'        : self.e_xor,
+            'E_OR_RULE'         : self.e_or,
+            'E_AND_RULE'        : self.e_and,
             'E_EQUALS_RULE'     : self.conditional_equal,
             'E_LESS_THAN'       : self.conditional_less_than,
             'E_GREATER_THAN'    : self.conditional_greater_than,

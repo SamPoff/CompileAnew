@@ -37,14 +37,14 @@ class Rule:
 main_funct = Rule('(TYPE_INT)(MAIN)(LP)(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)', 'FUNCT_DECLARE', 'MAIN', None)
 
 # int id;;
-int_declare = Rule('((TYPE_INT)(IDENTIFIER)(EQUALSIGN)(E|UE|NUMBER|IDENTIFIER)(SEMICOLON)|'
+int_declare = Rule('((TYPE_INT)(IDENTIFIER)(EQUALSIGN)(E|UE|NUMBER|HEX|IDENTIFIER)(SEMICOLON)|'
                        '(TYPE_INT)(IDENTIFIER)(SEMICOLON))', 'STATEMENT', 'INT_DECLARE', None)
 
-port_declare = Rule('(TYPE_PORT)(IDENTIFIER)(EQUALSIGN)(NUMBER)(SEMICOLON)', 'STATEMENT', 'PORT_DECLARE', None)
+port_declare = Rule('(TYPE_PORT)(IDENTIFIER)(EQUALSIGN)(NUMBER|HEX)(SEMICOLON)', 'STATEMENT', 'PORT_DECLARE', None)
 
 # if( some t/f expression ) {}
-if_statement = Rule('((IF)(LP)(E|UE|NUMBER|IDENTIFIER)(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
-                         '(IF)(LP)(E|UE|NUMBER|IDENTIFIER)(RP)(STATEMENT|IF_STATEMENT))', 'IF_STATEMENT', 'IF_STATEMENT', None)
+if_statement = Rule('((IF)(LP)(E|UE|NUMBER|HEX|IDENTIFIER)(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
+                         '(IF)(LP)(E|UE|NUMBER|HEX|IDENTIFIER)(RP)(STATEMENT|IF_STATEMENT))', 'IF_STATEMENT', 'IF_STATEMENT', None)
 if_else = Rule('((IF_STATEMENT)(ELSE_STATEMENT)|'
                          '(IF_STATEMENT)(ELSE_STATEMENT))', 'STATEMENT', 'IF_ELSE_STATEMENT', None)
 else_statement = Rule('((ELSE)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
@@ -55,14 +55,23 @@ for_loop = Rule('((FOR)(LP)(STATEMENT)(E)(SEMICOLON)(((IDENTIFIER)(EQUALSIGN)(E)
                  '(FOR)(LP)(STATEMENT)(E)(SEMICOLON)(((IDENTIFIER)(EQUALSIGN)(E))|(UE))(RP)(STATEMENT|IF_STATEMENT|SEMICOLON))', 'STATEMENT', 'FOR_LOOP', None)
 
 # while( expression ){}
-while_loop = Rule('((WHILE)(LP)(E|UE|NUMBER|IDENTIFIER)(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
-                         '(WHILE)(LP)(E|UE|NUMBER|IDENTIFIER)(RP)(STATEMENT|IF_STATEMENT|SEMICOLON))', 'STATEMENT', 'WHILE_LOOP', None)
+while_loop = Rule('((WHILE)(LP)(E|UE|NUMBER|HEX|IDENTIFIER)(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
+                         '(WHILE)(LP)(E|UE|NUMBER|HEX|IDENTIFIER)(RP)(STATEMENT|IF_STATEMENT|SEMICOLON))', 'STATEMENT', 'WHILE_LOOP', None)
 
 # id = something;
-assign_rule = Rule('(IDENTIFIER)(EQUALSIGN)(E|UE|NUMBER|IDENTIFIER)(SEMICOLON)', 'STATEMENT', 'ASSIGN', None)
+assign_rule = Rule('(IDENTIFIER)(EQUALSIGN)(E|UE|NUMBER|HEX|IDENTIFIER)(SEMICOLON)', 'STATEMENT', 'ASSIGN', None)
 
 # num/id + num/id
-add_rule = Rule('(NUMBER|IDENTIFIER|E)(PLUS)(NUMBER|IDENTIFIER|E)', 'E', 'E_ADD_RULE', 5)
+add_rule = Rule('(NUMBER|HEX|IDENTIFIER|E)(PLUS)(NUMBER|HEX|IDENTIFIER|E)', 'E', 'E_ADD_RULE', 5)
+
+# num/id & num/id
+and_rule = Rule('(NUMBER|HEX|IDENTIFIER|E)(BIT_AND)(NUMBER|HEX|IDENTIFIER|E)', 'E', 'E_AND_RULE', 5)
+
+# num/id | num/id
+or_rule = Rule('(NUMBER|HEX|IDENTIFIER|E)(BIT_OR)(NUMBER|HEX|IDENTIFIER|E)', 'E', 'E_OR_RULE', 5)
+
+# num/id ^ num/id
+xor_rule = Rule('(NUMBER|HEX|IDENTIFIER|E)(BIT_XOR)(NUMBER|HEX|IDENTIFIER|E)', 'E', 'E_XOR_RULE', 5)
 
 # id ++
 post_inc_rule = Rule('(IDENTIFIER)(DOUBLE_PLUS)', 'UE', 'POST_INC_RULE', 20)
@@ -80,13 +89,13 @@ pre_dec_rule = Rule('(DOUBLE_MINUS)(IDENTIFIER)', 'UE', 'PRE_DEC_RULE', 20)
 unary_rule = Rule('(UE)(SEMICOLON)', 'STATEMENT', 'UNARY_RULE', None)
 
 # something == something
-rel_equal = Rule('(E|UE|NUMBER|IDENTIFIER)(EQUALVALUE)(E|UE|NUMBER|IDENTIFIER)', 'E', 'E_EQUALS_RULE', None)
+rel_equal = Rule('(E|UE|NUMBER|HEX|IDENTIFIER)(EQUALVALUE)(E|UE|NUMBER|HEX|IDENTIFIER)', 'E', 'E_EQUALS_RULE', None)
 
 # something < something
-rel_less_than = Rule('(E|UE|NUMBER|IDENTIFIER)(LESSTHAN)(E|UE|NUMBER|IDENTIFIER)', 'E', 'E_LESS_THAN', None)
+rel_less_than = Rule('(E|UE|NUMBER|HEX|IDENTIFIER)(LESSTHAN)(E|UE|NUMBER|HEX|IDENTIFIER)', 'E', 'E_LESS_THAN', None)
 
 # something > something
-rel_greater_than = Rule('(E|UE|NUMBER|IDENTIFIER)(GREATERTHAN)(E|UE|NUMBER|IDENTIFIER)', 'E', 'E_GREATER_THAN', None)
+rel_greater_than = Rule('(E|UE|NUMBER|HEX|IDENTIFIER)(GREATERTHAN)(E|UE|NUMBER|HEX|IDENTIFIER)', 'E', 'E_GREATER_THAN', None)
 
 # enable interrupt;
 enable_interrupt = Rule('(ENABLE)(INTERRUPT)(SEMICOLON)', 'STATEMENT', 'ENABLE_INTERRUPT', None)
@@ -126,6 +135,9 @@ rules = [
     for_loop,
     while_loop,
     add_rule,
+    or_rule,
+    and_rule,
+    xor_rule,
     post_inc_rule,
     post_dec_rule,
     pre_inc_rule,

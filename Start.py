@@ -54,6 +54,7 @@ tree climber can break down each singular function to code generate. This
 process is done by iterating through the tree list, which is a list of 
 functions that make up the program.
 '''
+
 for node in tree:
     if(type(node) == ParseNode):
         traveler.climb(node)

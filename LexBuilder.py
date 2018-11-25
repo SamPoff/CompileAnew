@@ -41,8 +41,13 @@ class LexBuilder(object):
 
     def inputLexData( self, filename ):
         with open(filename, 'r') as myfile:
-            data = myfile.read().replace('\n', '')
+            data = myfile.read()
+            #data = re.sub(re.compile("(\/\*[\w\'\s\r\n\*]*\*\/)|(\/\/[\w\s\']*)|(\<![\-\-\s\w\>\/]*\>)"),"",data)
+            data = re.sub(re.compile("/\*.*?\*/",re.DOTALL ) ,"" ,data) # remove all occurance streamed comments (/*COMMENT */) from string
+            data = re.sub(re.compile("//.*?\n" ) ,"" ,data) # remove all occurance singleline comments (//COMMENT\n ) from string
+            data = data.replace('\n', '')
             return data
+        
 
     def input(self, buf):
         # Initialize the lexer with a buffer as input.
@@ -94,9 +99,6 @@ class LexBuilder(object):
         try:
             token_list = []
             for index, tok in enumerate(lexObj.tokens()):
-                if(tok.type == 'COMMENT'):
-                    tok = None
-                else:
                     token_list.append(tok)
                     """
                     Prints tokens when found.
