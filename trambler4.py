@@ -65,14 +65,16 @@ print ("Python Version: ",sys.version)
 #  if source code not included then prompt the user to enter the file name
 #########################################################################################
 
-if not (len(sys.argv) < 2):
-   filename = sys.argv[1]
-   print ("supplied: ",filename)
-else:
-   print ("Enter Filename: "),
-   filename = sys.stdin.readline()
-   print ("Prompted: ",filename)
-filename = filename.replace("\n","")     
+# if not (len(sys.argv) < 2):
+#    filename = sys.argv[1]
+#    print ("supplied: ",filename)
+# else:
+#    print ("Enter Filename: "),
+#    filename = sys.stdin.readline()
+#    print ("Prompted: ",filename)
+# filename = filename.replace("\n","")     
+
+filename = "assembly.tba"
 
 #########################################################################################
 # open up the files created in the assembly process

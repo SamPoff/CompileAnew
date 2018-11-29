@@ -1,13 +1,75 @@
-J_	EQU 0003
-I_	EQU 0002
+A_	EQU 0001
 K_	EQU 0001
+I_	EQU 0002
+J_	EQU 0003
+Z_	EQU 0004
+
 MAIN
-	LOAD	R1, 0000
-	STORE	R1, K_
-	LOAD	R4, 0006
-	LOAD	R1, R4
-	STORE	R1, I_
-	FETCH	R4, I_
-	ADD 	R4 0002
-	LOAD	R1, R4
-	STORE	R1, J_
+			LOAD	R1, 000a
+			STORE	R1, K_
+			LOAD	R4, 0006
+			LOAD	R1, R4
+			STORE	R1, I_
+			FETCH	R4, I_
+			ADD 	R4, 0002
+			LOAD	R1, R4
+			STORE	R1, J_
+			ENINT
+			FETCH	R6, I_
+			COMP 	R6, 0006
+			JUMPNZ	LABEL0	;if statement
+			FETCH	R4, I_
+			AND 	R4, 0002
+			STORE	R4, J_
+			FETCH	R4, K_
+			XOR 	R4, 0004
+			STORE	R4, K_
+			JUMP	LABEL1
+LABEL0
+			LOAD	R4, 0001
+			STORE	R4, J_
+			LOAD	R4, 0002
+			STORE	R4, K_
+LABEL1
+			JUMP	LABEL3	;while loop check condition
+LABEL2
+			FETCH	R4, I_
+			OR  	R4, 0002
+			STORE	R4, I_
+			FETCH	R4, I_
+			ADD 	R4, 0002
+			STORE	R4, I_
+LABEL3
+			FETCH	R6, J_
+			COMP 	R6, 000c
+			JUMPC	LABEL2	;while loop
+LABEL4
+			LOAD	R1, 0000
+			STORE	R1, Z_
+			FETCH	R2, Z_
+			ADD 	R2, 0001
+			FETCH	R4, K_
+			ADD 	R4, 0001
+			STORE	R4, K_
+			FETCH	R6, Z_
+			COMP 	R6, 000a
+			JUMPC	LABEL4	;for loop
+			DISINT
+
+
+			ADDRESS	0300
+
+ISR
+			LOAD	R4, 0032
+			STORE	R4, J_
+			FETCH	R7, I_
+			OUTPUT	R7, A_
+			INPUT	R7, A_
+			STORE	R7, I_
+			RETEN
+
+			ADDRESS	0FFE
+
+			JUMP	ISR
+
+			END

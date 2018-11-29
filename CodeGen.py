@@ -190,7 +190,7 @@ class CodeGen:
         asm2 = self.rel + '\t\t\t' + str(self.conditionals[pointer]) + '\tLABEL' + str(self.label) + '\t;if statement\n'
         self.label = self.label + 1
         if(self.else_flag == 1):
-            asm3 = '\t\t\tJMP\tLABEL'+ str(self.label) + '\n'
+            asm3 = '\t\t\tJUMP\tLABEL'+ str(self.label) + '\n'
             self.assembly = asm2 + self.assembly + asm3 + asm1
         else:
             self.assembly = asm2 + self.assembly + asm1

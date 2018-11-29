@@ -23,70 +23,103 @@
 3041
                			STORE	R1, J_
 000E F401 0003
-               			FETCH	R6, I_
-0010 F006 0002
+               			ENINT
+0010 1E00               			FETCH	R6, I_
+0011 F006 0002
                			COMP 	R6, 0006
-0012 9806 0006
+0013 9806 0006
                			JUMPNZ	LABEL0	;if statement
-0014 AC00 0022
+0015 AC00 0025
                			FETCH	R4, I_
-0016 F004 0002
-               			ADD 	R4, 0002
-0018 8204 0002
+0017 F004 0002
+               			AND 	R4, 0002
+0019 8A04 0002
                			STORE	R4, J_
-001A F404 0003
+001B F404 0003
                			FETCH	R4, K_
-001C F004 0001
-               			ADD 	R4, 0004
-001E 8204 0004
+001D F004 0001
+               			XOR 	R4, 0004
+001F E804 0004
                			STORE	R4, K_
-0020 F404 0001
+0021 F404 0001
+               			JUMP	LABEL1
+0023 A400 002d
                LABEL0
-               LABEL1
-               			FETCH	R4, I_
-0022 F004 0002
-               			ADD 	R4, 0001
-0024 8204 0001
-               			STORE	R4, I_
-0026 F404 0002
-               			FETCH	R4, I_
-0028 F004 0002
-               			ADD 	R4, 0002
-002A 8204 0002
-               			STORE	R4, I_
-002C F404 0002
-               			FETCH	R6, J_
-002E F006 0003
-               			COMP 	R6, 000c
-0030 9806 000C
-               			JUMPC	LABEL1	;while loop
-0032 A600 0022
-               			FETCH	R7, I_
-0034 F007 0002
-               			OUTPUT	R7, A_
-0036 B807 0001
-               			INPUT	R7, A_
-0038 A207 0001
-               			STORE	R7, I_
-003A F407 0002
-               LABEL2
-               			LOAD	R1, 0000
-003C AE01 0000
-               			STORE	R1, Z_
-003E F401 0004
-               			FETCH	R2, Z_
-0040 F002 0004
-               			ADD 	R2, 0001
-0042 8202 0001
-               			FETCH	R4, K_
-0044 F004 0001
-               			ADD 	R4, 0001
-0046 8204 0001
+               			LOAD	R4, 0001
+0025 AE04 0001
+               			STORE	R4, J_
+0027 F404 0003
+               			LOAD	R4, 0002
+0029 AE04 0002
                			STORE	R4, K_
-0048 F404 0001
+002B F404 0001
+               LABEL1
+               			JUMP	LABEL3	;while loop check condition
+002D A400 003b
+               LABEL2
+               			FETCH	R4, I_
+002F F004 0002
+               			OR  	R4, 0002
+0031 B204 0002
+               			STORE	R4, I_
+0033 F404 0002
+               			FETCH	R4, I_
+0035 F004 0002
+               			ADD 	R4, 0002
+0037 8204 0002
+               			STORE	R4, I_
+0039 F404 0002
+               LABEL3
+               			FETCH	R6, J_
+003B F006 0003
+               			COMP 	R6, 000c
+003D 9806 000C
+               			JUMPC	LABEL2	;while loop
+003F A600 002f
+               LABEL4
+               			LOAD	R1, 0000
+0041 AE01 0000
+               			STORE	R1, Z_
+0043 F401 0004
+               			FETCH	R2, Z_
+0045 F002 0004
+               			ADD 	R2, 0001
+0047 8202 0001
+               			FETCH	R4, K_
+0049 F004 0001
+               			ADD 	R4, 0001
+004B 8204 0001
+               			STORE	R4, K_
+004D F404 0001
                			FETCH	R6, Z_
-004A F006 0004
+004F F006 0004
                			COMP 	R6, 000a
-004C 9806 000A
-               			JUMPC	LABEL2
-004E A600 003c
+0051 9806 000A
+               			JUMPC	LABEL4	;for loop
+0053 A600 0041
+               			DISINT
+0055 1C00               
+               
+               			ADDRESS	0300
+               
+               ISR
+               			LOAD	R4, 0032
+0300 AE04 0032
+               			STORE	R4, J_
+0302 F404 0003
+               			FETCH	R7, I_
+0304 F007 0002
+               			OUTPUT	R7, A_
+0306 B807 0001
+               			INPUT	R7, A_
+0308 A207 0001
+               			STORE	R7, I_
+030A F407 0002
+               			RETEN
+030C 4600               
+               			ADDRESS	0FFE
+               
+               			JUMP	ISR
+0FFE A400 0300
+               
+               			END

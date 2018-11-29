@@ -10,7 +10,6 @@ from LexBuilder import LexBuilder
 from ParseNode import ParseNode
 from Token import Token
 from TreeClimber import TreeClimber
-from trambler4 import trambler4
 import Rule
 
 """
@@ -62,4 +61,5 @@ for node in tree:
 traveler.CodeGen.write_header()
 traveler.CodeGen.write_footer()
 
+import trambler4
 trambler4
