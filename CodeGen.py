@@ -23,10 +23,13 @@ class CodeGen:
         self.rel = ""
         self.header = ""
         self.footer = ""
+        self.header_flag = True
+        self.define_flag = False
         self.label = 0
-        self.repeat = 0
+        self.repeat = False
         self.else_flag = 0
         self.cond_point = 0
+        self.current_funct = 0
         self.conditionals = ['JUMP','JUMPC','JUMPNC','JUMPZ','JUMPNZ']
         file = open("assembly.tba","w")
         file.write("")
@@ -72,6 +75,7 @@ class CodeGen:
             pointer = 3
         return pointer
     
+
     def check_repeat(self, tok):
         # check to see if a variable is already used
         for item in self.variables:
@@ -81,28 +85,64 @@ class CodeGen:
                     temp_equ = tok.val
                 else:
                     temp_equ = tok.val.upper()+'_'
-                self.repeat = 1
+                self.repeat = True
                 return temp_equ
-        
-        # \t\tADD to the variable list, return the new location
-        self.mem_loc = self.mem_loc + 1
-        if(tok.val.isupper()):
-            temp_equ = tok.val
+        # if within file header (e.g. #define, global, etc.) 
+        if(self.define_flag):
+            if(tok.val.isupper()):
+                temp_equ = tok.val
+            else:
+                temp_equ = tok.val.upper()+'_'
+            value = int(self.phrase[2].val)
+            self.header = self.header + temp_equ + '\tEQU ' + hex(value)[2:].rjust(4, '0') + '\n'
+            return temp_equ
+        # else within function applying to variables
         else:
-            temp_equ = tok.val.upper()+'_'
-        self.header = self.header + temp_equ + '\tEQU ' + hex(int(self.mem_loc))[2:].rjust(4, '0') + '\n'
-        self.variables.append((tok.val,self.mem_loc))
-        self.repeat = 0
+            # \t\tADD to the variable list, return the new location
+            self.mem_loc = self.mem_loc + 1
+            if(tok.val.isupper()):
+                temp_equ = tok.val
+            else:
+                temp_equ = tok.val.upper()+'_'
+            self.header = self.header + temp_equ + '\tEQU ' + hex(int(self.mem_loc))[2:].rjust(4, '0') + '\n'
+            self.variables.append((tok.val,self.mem_loc))
+            self.repeat = 0
+            
+            return temp_equ
+    
+    def define(self):
+        self.define_flag = True
+        self.check_repeat(self.phrase[1])
+        self.define_flag = False
+        if(self.repeat):
+            print("ERROR: " + self.phrase[1].val + "Variable alreadydeclared.")
         
-        return temp_equ
+    def get_operands(self):
+        # check operands for viability
+        mem = ['0','0']
+        if(self.phrase[0].type == 'IDENTIFIER'):
+            mem[0] = self.check_repeat(self.phrase[0])
+            # ERROR CHECK
+            if(self.repeat == False):
+                print("ERROR: " + mem[0] + "Variable not declared.")
+                print("list of variables: ")
+                print(str(self.variables))
+                sys.exit(1)
+        if(self.phrase[2].type == 'IDENTIFIER'):
+            mem[1] = self.check_repeat(self.phrase[2])
+            # ERROR CHECK
+            if(self.repeat == False):
+                print("ERROR: " + mem[1] + "Variable not declared.")
+                print("list of variables: ")
+                print(str(self.variables))
+                sys.exit(1)
+        return mem
     
     def conditional_generic(self):
-        mem1 = '0'
-        mem2 = '0'
-        if(self.phrase[0].type == 'IDENTIFIER'):
-            mem1 = self.check_repeat(self.phrase[0])
-        if(self.phrase[2].type == 'IDENTIFIER'):
-            mem2 = self.check_repeat(self.phrase[2])
+        operands = self.get_operands()
+        mem1 = operands[0]
+        mem2 = operands[1]
+            
         try:
             first = int(self.phrase[0].val, 0)
         except ValueError:
@@ -153,12 +193,12 @@ class CodeGen:
             if(self.phrase[5].val.isupper()):
                 temp = self.phrase[4].val
             else:
-                temp = self.phrase[4].val.upper()+'_'
+                temp = self.phrase[4].val.upper()
         # check if mem location is lowercase or uppercase
         if(self.phrase[2].val.isupper()):
             var = self.phrase[2].val
         else:
-            var = self.phrase[2].val.upper()+'_'
+            var = self.phrase[2].val.upper() + '_'
         asm = '\t\t\tFETCH\tR7, ' + var + '\n'
         asm = asm + '\t\t\tOUTPUT\tR7, '+ str(temp) +'\n'            
         self.assembly = self.assembly + asm
@@ -174,7 +214,7 @@ class CodeGen:
             if(self.phrase[5].val.isupper()):
                 temp = self.phrase[4].val
             else:
-                temp = self.phrase[4].val.upper()+'_'
+                temp = self.phrase[4].val.upper()
         # check if mem location is lowercase or uppercase
         if(self.phrase[2].val.isupper()):
             var = self.phrase[2].val
@@ -238,7 +278,7 @@ class CodeGen:
       
     def post_inc(self):
         mem = self.check_repeat(self.phrase[0])
-        if(self.repeat == 1):
+        if(self.repeat):
             asm = '\t\t\tFETCH\tR2, ' + mem + '\n\t\t\tADD \tR2, 0001\n'
             self.assembly = self.assembly + asm 
         else:
@@ -246,13 +286,10 @@ class CodeGen:
             sys.exit(1)
             
     def e_add(self):
-        temp = 0
-        mem1 = '0'
-        mem2 = '0'
-        if(self.phrase[0].type == 'IDENTIFIER'):
-            mem1 = self.check_repeat(self.phrase[0])
-        if(self.phrase[2].type == 'IDENTIFIER'):
-            mem2 = self.check_repeat(self.phrase[2])
+        operands = self.get_operands()
+        mem1 = operands[0]
+        mem2 = operands[1]
+        
         # check which is a number
         try:
             first = int(self.phrase[0].val, 0)
@@ -283,15 +320,10 @@ class CodeGen:
         self.assembly = self.assembly + asm
      
     def e_and(self):
-        temp = 0
-        mem1 = '0'
-        mem2 = '0'
-        if(self.phrase[0].type == 'IDENTIFIER'):
-            print('HERE\n\n')
-            mem1 = self.check_repeat(self.phrase[0])
-        if(self.phrase[2].type == 'IDENTIFIER'):
-            print('HERE\n\n')
-            mem2 = self.check_repeat(self.phrase[2])
+        operands = self.get_operands()
+        mem1 = operands[0]
+        mem2 = operands[1]
+        
         # check which is a number
         try:
             first = int(self.phrase[0].val, 0)
@@ -322,13 +354,9 @@ class CodeGen:
         self.assembly = self.assembly + asm
     
     def e_or(self):
-        temp = 0
-        mem1 = '0'
-        mem2 = '0'
-        if(self.phrase[0].type == 'IDENTIFIER'):
-            mem1 = self.check_repeat(self.phrase[0])
-        if(self.phrase[2].type == 'IDENTIFIER'):
-            mem2 = self.check_repeat(self.phrase[2])
+        operands = self.get_operands()
+        mem1 = operands[0]
+        mem2 = operands[1]
         # check which is a number
         try:
             first = int(self.phrase[0].val, 0)
@@ -359,13 +387,10 @@ class CodeGen:
         self.assembly = self.assembly + asm
     
     def e_xor(self):
-        temp = 0
-        mem1 = '0'
-        mem2 = '0'
-        if(self.phrase[0].type == 'IDENTIFIER'):
-            mem1 = self.check_repeat(self.phrase[0])
-        if(self.phrase[2].type == 'IDENTIFIER'):
-            mem2 = self.check_repeat(self.phrase[2])
+        operands = self.get_operands()
+        mem1 = operands[0]
+        mem2 = operands[1]
+        
         # check which is a number
         try:
             first = int(self.phrase[0].val, 0)
@@ -398,7 +423,7 @@ class CodeGen:
     def assign_statement(self):
         mem = self.check_repeat(self.phrase[0])
         asm = ""
-        if(self.repeat == 1):
+        if(self.repeat):
             if(self.phrase[2].type == 'NUMBER'):
                 temp = int(self.phrase[2].val, 0)
                 asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
@@ -411,6 +436,10 @@ class CodeGen:
         
     def int_declare(self):
         mem = self.check_repeat(self.phrase[1])
+        if(self.repeat):
+            print("ERROR: " + mem + "Variable already declared.")
+            sys.exit(1)
+        
         print(mem)
         asm = '\t\t\tLOAD\tR1, '
         if(len(self.phrase) > 3):
@@ -421,7 +450,11 @@ class CodeGen:
         else:
             asm = asm + '0000\n'
         asm = asm + '\t\t\tSTORE\tR1, ' + mem + '\n'
-        self.assembly = self.assembly + asm
+        if(self.header_flag):
+            self.assembly = self.assembly + asm
+            self.file_output()
+        else:
+            self.assembly = self.assembly + asm
         
     def main_start(self):
         # push main on label on top of main function
@@ -438,7 +471,7 @@ class CodeGen:
         #self.file_output()
     
     def isr_start(self):
-        asm1 = '\t\t\tADDRESS\t0300\n' + '\nISR\n'
+        asm1 = '\t\t\tADDRESS 0300\nISR\n'
         asm2 = '\t\t\tRETEN'
         self.assembly = self.assembly + asm2
         self.footer = self.footer + "\t\t\tADDRESS\t0FFE\n\n"+"\t\t\tJUMP\tISR"+"\n\n\t\t\tEND"
@@ -466,6 +499,7 @@ class CodeGen:
         #print(rule)
         
         assemble = {
+            'DEFINE'            : self.define,
             'MAIN'              : self.main_start,
             'ISR'               : self.isr_start,
             'INT_DECLARE'       : self.int_declare,

@@ -34,13 +34,18 @@ class Rule:
 ########################################################################
 
 # int main() {}
-main_funct = Rule('(TYPE_INT)(MAIN)(LP)(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)', 'FUNCT_DECLARE', 'MAIN', None)
+main_funct = Rule('(TYPE_INT)(MAIN)(LP)(RP)(LB)(STATEMENT|IF_STATEMENT|PRIME_STATEMENT)*?(RB)', 'FUNCT_DECLARE', 'MAIN', None)
 
+########################################################################
+# Integer declares and port declares are prime statements.
+# This means they can be used outside of a function.
+# Purposes include global variables and ports used in the ISR.
+########################################################################
 # int id;;
 int_declare = Rule('((TYPE_INT)(IDENTIFIER)(EQUALSIGN)(E|UE|NUMBER|HEX|IDENTIFIER)(SEMICOLON)|'
-                       '(TYPE_INT)(IDENTIFIER)(SEMICOLON))', 'STATEMENT', 'INT_DECLARE', None)
+                       '(TYPE_INT)(IDENTIFIER)(SEMICOLON))', 'PRIME_STATEMENT', 'INT_DECLARE', None)
 
-port_declare = Rule('(TYPE_PORT)(IDENTIFIER)(EQUALSIGN)(NUMBER|HEX)(SEMICOLON)', 'STATEMENT', 'PORT_DECLARE', None)
+port_declare = Rule('(TYPE_PORT)(IDENTIFIER)(EQUALSIGN)(NUMBER|HEX)(SEMICOLON)', 'PRIME_STATEMENT', 'PORT_DECLARE', None)
 
 # if( some t/f expression ) {}
 if_statement = Rule('((IF)(LP)(E|UE|NUMBER|HEX|IDENTIFIER)(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
@@ -51,8 +56,8 @@ else_statement = Rule('((ELSE)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
                          '(ELSE)(STATEMENT|IF_STATEMENT))', 'ELSE_STATEMENT', 'ELSE_STATEMENT', None)
 
 # for( statement; expression; statement ) {} or for( statement; expression; statement ) statement; 
-for_loop = Rule('((FOR)(LP)(STATEMENT)(E)(SEMICOLON)(((IDENTIFIER)(EQUALSIGN)(E))|(UE))(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
-                 '(FOR)(LP)(STATEMENT)(E)(SEMICOLON)(((IDENTIFIER)(EQUALSIGN)(E))|(UE))(RP)(STATEMENT|IF_STATEMENT|SEMICOLON))', 'STATEMENT', 'FOR_LOOP', None)
+for_loop = Rule('((FOR)(LP)(PRIME_STATEMENT|STATEMENT)(E)(SEMICOLON)(((IDENTIFIER)(EQUALSIGN)(E))|(UE))(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
+                 '(FOR)(LP)(PRIME_STATEMENT|STATEMENT)(E)(SEMICOLON)(((IDENTIFIER)(EQUALSIGN)(E))|(UE))(RP)(STATEMENT|IF_STATEMENT|SEMICOLON))', 'STATEMENT', 'FOR_LOOP', None)
 
 # while( expression ){}
 while_loop = Rule('((WHILE)(LP)(E|UE|NUMBER|HEX|IDENTIFIER)(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)|'
@@ -104,7 +109,7 @@ enable_interrupt = Rule('(ENABLE)(INTERRUPT)(SEMICOLON)', 'STATEMENT', 'ENABLE_I
 disable_interrupt = Rule('(DISABLE)(INTERRUPT)(SEMICOLON)', 'STATEMENT', 'DISABLE_INTERRUPT', None)
 
 # int main() {}
-isr_funct = Rule('(ISR_HANDLER)(LP)(RP)(LB)(STATEMENT|IF_STATEMENT)*?(RB)', 'FUNCT_DECLARE', 'ISR', None)
+isr_funct = Rule('(ISR_HANDLER)(LP)(RP)(LB)(STATEMENT|IF_STATEMENT|PRIME_STATEMENT)*?(RB)', 'FUNCT_DECLARE', 'ISR', None)
 
 # output(something, somewhere);
 port_output = Rule('(OUTPUT)(LP)(IDENTIFIER)(COMMA)(IDENTIFIER)(RP)(SEMICOLON)', 'STATEMENT', 'PORT_OUTPUT', None)
@@ -112,16 +117,11 @@ port_output = Rule('(OUTPUT)(LP)(IDENTIFIER)(COMMA)(IDENTIFIER)(RP)(SEMICOLON)',
 port_input = Rule('(INPUT)(LP)(IDENTIFIER)(COMMA)(IDENTIFIER)(RP)(SEMICOLON)', 'STATEMENT', 'PORT_INPUT', None)
 # # i = k + l;
 # all_ids = Rule('(IDENTIFIER)(EQUALSIGN)(IDENTIFIER)(PLUS)(IDENTIFIER)', 'E', 'E_ALL_IDENTIFIERS', None)
+define = Rule('(DEFINE)(IDENTIFIER)(NUMBER|HEX)', 'PRIME_STATEMENT', 'DEFINE', None)
 
-"""
-'LESSTHAN', 20),
-        ('\<=',                         'LESSTHANEQUAL', 20),
-        ('\>',                          'GREATERTHAN', 20),
-        ('\<=',                         'GREATERTHANEQUAL', 20),
-"""
-# Rule('/(TYPE_INT)/'                                       ,'STATEMENT'  ,'MAIN'       , None),
-
+# The List of rules used for the parse
 rules = [
+    define,
     main_funct,
     isr_funct,
     enable_interrupt,

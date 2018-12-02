@@ -26,6 +26,8 @@ class TreeClimber:
             self.CodeGen.else_flag = 1
         if(tree.rule.new == 'FOR_LOOP' or tree.rule.new == 'IF_STATEMENT'or tree.rule.new == 'ELSE_STATEMENT' or tree.rule.new == 'WHILE_LOOP'):
             self.CodeGen.file_output()
+        if(tree.rule.orig == 'FUNCT_DECLARE'):
+            self.CodeGen.header_flag = False
         
         for child in tree.children:
             if(type(child) == ParseNode):

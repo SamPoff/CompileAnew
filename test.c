@@ -1,11 +1,13 @@
 /*this is a comment*/
+#define harrison 56
+int j = 10;
 
 int main(){
     //hello
     port a = 0x0001;
     int k = 10;
     int i = 5 + 1;
-    int j = i + 2;
+    j = i + 2;
     enable interrupt;
     if(i == 6){
         j = i & 2;
@@ -26,9 +28,8 @@ int main(){
     disable interrupt;
     
 }
-
 Interrupt_Handler(){
     j = 50;
-    output(i, a);
-    input(i, a);
+    output(j, a);
+    input(j, a);
 }

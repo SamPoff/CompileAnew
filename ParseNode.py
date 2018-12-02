@@ -141,7 +141,7 @@ class ParseNode:
                     tree_stack.append(tokens[0])
                     tokens = tokens[1:]
         
-        correct = re.compile('(FUNCT_DECLARE)(FUNCT_DECLARE)*')
+        correct = re.compile('(PRIME_STATEMENT)*(FUNCT_DECLARE)(FUNCT_DECLARE)*')
         print(stack)
         # when we're done, we should have the start symbol (placeholder) left in the stack
         if tree_stack[0] == start_symbol and correct.match(stack):

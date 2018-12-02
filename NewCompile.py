@@ -10,6 +10,7 @@ class NewCompile(object):
         def __init__(self, filename):  
             self.filename = filename
             self.rules = rules = [
+    ('\#define',                    'DEFINE', 60),
     ('0[xX][0-9a-fA-F]+',           'HEX', 60),
     ('\d+',                         'NUMBER', 60),
     ('Interrupt_Handler',           'ISR_HANDLER', 60),
