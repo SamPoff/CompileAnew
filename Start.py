@@ -15,7 +15,7 @@ import Rule
 """
 # Change this path to source file.
 """
-path = 'test2.c'
+path = 'Demo_Test_1.c'
 # path = '/Users/sp31485/git/CompileAnew/Compiler_WorkYouFrig/src/test.c'
 
 # Generates an object containing the lexing rules and path

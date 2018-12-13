@@ -18,6 +18,10 @@ class CodeGen:
     def __init__(self):
         self.phrase = []
         self.variables = []
+        self.equates = []
+        self.express_list = []
+        self.express_index = 0
+        self.temp_assembly = []
         self.mem_loc = 0
         self.assembly = ""
         self.rel = ""
@@ -25,8 +29,10 @@ class CodeGen:
         self.footer = ""
         self.header_flag = True
         self.define_flag = False
-        self.label = 0
         self.repeat = False
+        self.define_repeat = False
+        self.define_code = 0
+        self.label = 0
         self.else_flag = 0
         self.cond_point = 0
         self.current_funct = 0
@@ -40,6 +46,8 @@ class CodeGen:
         # write to assembly file
         file = open("assembly.tba","a")
         file.write(self.assembly)
+        if(self.header_flag):
+            self.file_pos = file.tell()
         file.close()
         self.assembly = ""
         
@@ -50,7 +58,7 @@ class CodeGen:
         with open("assembly.tba", 'r+') as file:
             content = file.read()
             file.seek(0, 0)
-            file.write(self.header + content)
+            file.write(self.header + '\n' + content)
             file.close()
         self.header = ""
     
@@ -78,6 +86,16 @@ class CodeGen:
 
     def check_repeat(self, tok):
         # check to see if a variable is already used
+        for item in self.equates:
+            if(item[0] == tok.val):
+                # Variable has already been mapped to define statement
+                if(tok.val.isupper()):
+                    temp_equ = tok.val
+                else:
+                    temp_equ = tok.val.upper()+'_'
+                self.define_repeat = True
+                return temp_equ
+            
         for item in self.variables:
             if(item[0] == tok.val):
                 # Variable has already been mapped to memory location
@@ -93,8 +111,15 @@ class CodeGen:
                 temp_equ = tok.val
             else:
                 temp_equ = tok.val.upper()+'_'
-            value = int(self.phrase[2].val)
-            self.header = self.header + temp_equ + '\tEQU ' + hex(value)[2:].rjust(4, '0') + '\n'
+            try:
+                value = int(self.phrase[2].val)
+                self.header = self.header + temp_equ + '\tEQU ' + hex(value)[2:].rjust(4, '0') + '\n'
+            except ValueError:
+                value = hex(int(self.phrase[2].val, 0))[2:].rjust(4, '0')
+                self.header = self.header + temp_equ + '\tEQU ' + value + '\n'
+            self.equates.append((tok.val,value))
+            self.repeat = False
+            self.define_repeat = False
             return temp_equ
         # else within function applying to variables
         else:
@@ -106,8 +131,8 @@ class CodeGen:
                 temp_equ = tok.val.upper()+'_'
             self.header = self.header + temp_equ + '\tEQU ' + hex(int(self.mem_loc))[2:].rjust(4, '0') + '\n'
             self.variables.append((tok.val,self.mem_loc))
-            self.repeat = 0
-            
+            self.repeat = False
+            self.define_repeat = False
             return temp_equ
     
     def define(self):
@@ -119,55 +144,47 @@ class CodeGen:
         
     def get_operands(self):
         # check operands for viability
-        mem = ['0','0']
-        if(self.phrase[0].type == 'IDENTIFIER'):
-            mem[0] = self.check_repeat(self.phrase[0])
-            # ERROR CHECK
-            if(self.repeat == False):
-                print("ERROR: " + mem[0] + "Variable not declared.")
-                print("list of variables: ")
-                print(str(self.variables))
-                sys.exit(1)
-        if(self.phrase[2].type == 'IDENTIFIER'):
-            mem[1] = self.check_repeat(self.phrase[2])
-            # ERROR CHECK
-            if(self.repeat == False):
-                print("ERROR: " + mem[1] + "Variable not declared.")
-                print("list of variables: ")
-                print(str(self.variables))
-                sys.exit(1)
-        return mem
-    
-    def conditional_generic(self):
-        operands = self.get_operands()
-        mem1 = operands[0]
-        mem2 = operands[1]
-            
-        try:
-            first = int(self.phrase[0].val, 0)
-        except ValueError:
-            first = 0
-        try:
-            second = int(self.phrase[2].val, 0)
-        except ValueError:
-            second = 0
-        
-        temp = first + second
-        # both
-        if(temp == 0):
-            asm = '\t\t\tFETCH\tR6, ' + mem1 + '\n'
-            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
-            asm = asm + '\t\t\tCOMP \tR6, R5\n'
-        elif(temp == first):
-            asm = '\t\t\tFETCH\tR6, ' + mem2 + '\n'
-            asm = asm + '\t\t\tCOMP \tR6, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        elif(temp == second):
-            asm = '\t\t\tFETCH\tR6, ' + mem1 + '\n'
-            asm = asm + '\t\t\tCOMP \tR6, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+        if(len(self.phrase) == 3):
+            mem = ['0','0']
+            if(self.phrase[0].type == 'IDENTIFIER'):
+                mem[0] = self.check_repeat(self.phrase[0])
+                # ERROR CHECK
+                if(self.repeat == False):
+                    print("ERROR: " + mem[0] + "Variable not declared.")
+                    print("list of variables: ")
+                    print(str(self.variables))
+                    sys.exit(1)
+                # if the variable is from a define and first element
+                if(self.define_repeat):
+                    self.define_code = 1
+            if(self.phrase[2].type == 'IDENTIFIER'):
+                mem[1] = self.check_repeat(self.phrase[2])
+                # ERROR CHECK
+                if(self.repeat == False):
+                    print("ERROR: " + mem[1] + "Variable not declared.")
+                    print("list of variables: ")
+                    print(str(self.variables))
+                    sys.exit(1)
+                # if the variable is from a define and third element
+                if(self.define_repeat):
+                    self.define_code = 2
+            return mem
         else:
-            asm = '\t\t\tLOAD\tR6, ' + hex(first)[2:].rjust(4, '0') + '\n'
-            asm = '\t\t\tCOMP \tR6, ' + hex(second)[2:].rjust(4, '0') + '\n'
-        return asm
+            mem = '0'
+            if(self.phrase[1].type == 'IDENTIFIER'):
+                mem = self.check_repeat(self.phrase[0])
+                # ERROR CHECK
+                if(self.repeat == False):
+                    print("ERROR: " + mem + "Variable not declared.")
+                    print("list of variables: ")
+                    print(str(self.variables))
+                    sys.exit(1)
+                # if the variable is from a define and first element
+                if(self.define_repeat):
+                    self.define_code = 1
+            return mem
+    
+   
     
     def port_declare(self):
         for item in self.variables:
@@ -190,10 +207,10 @@ class CodeGen:
                 print("ERROR: " + str(temp) + "port out of range.")
                 sys.exit(1)        
         except ValueError:
-            if(self.phrase[5].val.isupper()):
+            if(self.phrase[4].val.isupper()):
                 temp = self.phrase[4].val
             else:
-                temp = self.phrase[4].val.upper()
+                temp = self.phrase[4].val.upper() + '_'
         # check if mem location is lowercase or uppercase
         if(self.phrase[2].val.isupper()):
             var = self.phrase[2].val
@@ -211,10 +228,10 @@ class CodeGen:
                 print("ERROR: " + str(temp) + "port out of range.")
                 sys.exit(1)        
         except ValueError:
-            if(self.phrase[5].val.isupper()):
+            if(self.phrase[4].val.isupper()):
                 temp = self.phrase[4].val
             else:
-                temp = self.phrase[4].val.upper()
+                temp = self.phrase[4].val.upper() + '_'
         # check if mem location is lowercase or uppercase
         if(self.phrase[2].val.isupper()):
             var = self.phrase[2].val
@@ -258,8 +275,587 @@ class CodeGen:
         self.label = self.label + 1
         self.assembly = asm1 + self.assembly + asm2
     
+      
+    def post_inc(self):
+        mem = self.check_repeat(self.phrase[0])
+        if(self.repeat):
+            asm = '\t\t\tFETCH\tR2, ' + mem + '\n\t\t\tADD \tR2, 0001\n'
+            self.assembly = self.assembly + asm 
+        else:
+            print("ERROR: " + mem + "Variable not declared.")
+            sys.exit(1)
+    
+    def conditional_generic(self):
+        asm = ""
+        operands = self.get_operands()
+        first_flag = False
+        second_flag = False
+        if(len(self.phrase) == 3):
+            mem1 = operands[0]
+            mem2 = operands[1]
+            try:
+                first = int(self.phrase[0].val, 0)
+            except ValueError:
+                first = 0
+                first_flag = True
+            try:
+                second = int(self.phrase[2].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = first + second
+            # both
+            if(first_flag and second_flag):
+                if(self.define_code == 1):
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, ' + mem1 + '\n'
+                elif(self.define_code == 2):
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, ' + mem2 + '\n'
+                elif(self.define_code == 3):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, ' + mem2 + '\n'
+                else:   
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, R5\n'
+            elif(second_flag):
+                if(self.define_code == 2):
+                    asm = '\t\t\tLOAD\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            elif(temp == second):
+                if(self.define_code == 1):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(first)[2:].rjust(4, '0') + '\n'
+                asm = '\t\t\tCOMP \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
+            return asm
+        # complex statement version, more than 1 expression
+        else:
+            mem2 = operands
+            try:
+                second = int(self.phrase[1].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = second
+            # both
+            if(second_flag):
+                if(self.define_code == 2):
+                    asm = '\t\t\tLOAD\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tCOMP \tR4, R5\n'
+            elif(temp == second):
+                asm = asm + '\t\t\tCOMP \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            else:
+                asm = '\t\t\tCOMP \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
+            return asm
         
     
+    def e_shift_right(self):
+        asm = ""
+        operands = self.get_operands()
+        first_flag = False
+        second_flag = False
+        if(len(self.phrase) == 3):
+            
+            mem1 = operands[0]
+            mem2 = operands[1]
+            
+            # check which is a number
+            try:
+                first = int(self.phrase[0].val, 0)
+            except ValueError:
+                first = 0
+                first_flag = True
+            try:
+                second = int(self.phrase[2].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            if(second != 1):
+                print("ERROR: " + second + "shift must be value '1'.")
+                sys.exit(1)      
+                
+            temp = first + second
+            # if both are  
+            if(first_flag and second_flag):
+                asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                asm = asm + '\t\t\tSR0 \tR4\n'
+            # if first element is a number and third is a variable
+            elif(second_flag):
+                asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                asm = asm + '\t\t\tSR0 \tR4\n'
+            # if third element is a number and first is a variable
+            elif(temp == second):
+                asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                asm = asm + '\t\t\tSR0 \tR4\n'
+            # if there is no variable, pre-process
+            else:
+                temp = first >> second;
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+            
+        else:
+               
+            mem2 = operands
+            
+            # check which is a number
+            try:
+                second = int(self.phrase[1].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            if(second != 1):
+                print("ERROR: " + second + "shift must be value '1'.")
+                sys.exit(1)    
+                
+            temp = second
+            # if both are  
+            if(second_flag):
+                asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                asm = asm + '\t\t\tSR0 \tR5\n'
+            # if third element is a number and first is a variable
+            elif(temp == second):
+                asm = asm + '\t\t\tSR0 \tR5\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+    
+    def e_shift_left(self):
+        asm = ""
+        operands = self.get_operands()
+        first_flag = False
+        second_flag = False
+        if(len(self.phrase) == 3):
+            
+            mem1 = operands[0]
+            mem2 = operands[1]
+            
+            # check which is a number
+            try:
+                first = int(self.phrase[0].val, 0)
+            except ValueError:
+                first = 0
+                first_flag = True
+            try:
+                second = int(self.phrase[2].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            if(second != 1):
+                print("ERROR: " + second + "shift must be value '1'.")
+                sys.exit(1)      
+                
+            temp = first + second
+            # if both are  
+            if(first_flag and second_flag):
+                asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                asm = asm + '\t\t\tSL0 \tR4\n'
+            # if first element is a number and third is a variable
+            elif(second_flag):
+                asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                asm = asm + '\t\t\tSL0 \tR4\n'
+            # if third element is a number and first is a variable
+            elif(temp == second):
+                asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                asm = asm + '\t\t\tSL0 \tR4\n'
+            # if there is no variable, pre-process
+            else:
+                temp = first << second;
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+            
+        else:
+               
+            mem2 = operands
+            
+            # check which is a number
+            try:
+                second = int(self.phrase[1].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            if(second != 1):
+                print("ERROR: " + second + "shift must be value '1'.")
+                sys.exit(1)    
+                
+            temp = second
+            # if both are  
+            if(second_flag):
+                asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                asm = asm + '\t\t\tSL0 \tR4\n'
+            # if third element is a number and first is a variable
+            elif(temp == second):
+                asm = asm + '\t\t\tSL0 \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+        
+    def e_add(self):
+        asm = ""
+        operands = self.get_operands()
+        first_flag = False
+        second_flag = False
+        if(len(self.phrase) == 3):
+            mem1 = operands[0]
+            mem2 = operands[1]
+            
+            # check which is a number
+            try:
+                first = int(self.phrase[0].val, 0)
+            except ValueError:
+                first = 0
+                first_flag = True
+            try:
+                second = int(self.phrase[2].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = first + second
+            # if both are  
+            if(first_flag and second_flag):
+                if(self.define_code == 1):
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tADD \tR4,' + mem1 + '\n'
+                elif(self.define_code == 2):
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tADD \tR4,' + mem2 + '\n'
+                elif(self.define_code == 3):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tADD \tR4,' + mem2 + '\n'
+                else:   
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tADD \tR4, R5\n'
+            # if first element is a number and third is a variable
+            elif(second_flag):
+                if(self.define_code == 2):
+                    asm = '\t\t\tLOAD\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            # if third element is a number and first is a variable
+            elif(temp == second):
+                if(self.define_code == 1):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+            
+        else:
+            mem2 = operands
+            
+            # check which is a number
+            try:
+                second = int(self.phrase[1].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = second
+            # if both are  
+            if(second_flag):
+                if(self.define_code == 2):
+                    asm = asm + '\t\t\tLOAD\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tADD \tR4, R5\n'
+                else:
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tADD \tR4, R5\n'
+            # if third element is a number and first is a variable
+            elif(temp == second):
+                asm = asm + '\t\t\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+                   
+    def e_and(self):
+        asm = ""
+        operands = self.get_operands()
+        first_flag = False
+        second_flag = False
+        if(len(self.phrase) == 3):
+            mem1 = operands[0]
+            mem2 = operands[1]
+        
+            # check which is a number
+            try:
+                first = int(self.phrase[0].val, 0)
+            except ValueError:
+                first = 0
+                first_flag = True
+            try:
+                second = int(self.phrase[2].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = first & second
+            # if both are  
+            if(first_flag and second_flag):
+                if(self.define_code == 1):
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tAND \tR4,' + mem1 + '\n'
+                elif(self.define_code == 2):
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tAND \tR4,' + mem2 + '\n'
+                elif(self.define_code == 3):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tAND \tR4,' + mem2 + '\n'
+                else:   
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tAND \tR4, R5\n'
+            # if first element is a number and third is a variable
+            elif(second_flag):
+                if(self.define_code == 2):
+                    asm = '\t\t\tLOAD\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tAND \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tAND \tR4, ' + hex(first)[2:].rjust(4, '0') + '\n'
+            # if third element is a number and first is a variable
+            elif(first_flag):
+                if(self.define_code == 1):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tAND \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tAND \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+        else:
+            mem2 = operands
+            # check which is a number
+            try:
+                second = int(self.phrase[1].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = second
+            # if both are  
+            if(second_flag):
+                if(self.define_code == 2):
+                    asm = '\t\t\tLOAD\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tAND \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tAND \tR4, R5\n'
+            # if first element is a number and third is a variable
+            elif(temp == second):
+                asm = asm + '\t\t\tAND \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+            
+    def e_or(self):
+        asm = ""
+        operands = self.get_operands()
+        first_flag = False
+        second_flag = False
+        if(len(self.phrase) == 3):
+            mem1 = operands[0]
+            mem2 = operands[1]
+            # check which is a number
+            try:
+                first = int(self.phrase[0].val, 0)
+            except ValueError:
+                first = 0
+                first_flag = True
+            try:
+                second = int(self.phrase[2].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = first | second
+            #if both are
+            if(first_flag and second_flag):
+                if(self.define_code == 1):
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4,' + mem1 + '\n'
+                elif(self.define_code == 2):
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4,' + mem2 + '\n'
+                elif(self.define_code == 3):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4,' + mem2 + '\n'
+                else:   
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4, R5\n'
+            # if first element is a number and third is a variable
+            elif(second_flag):
+                if(self.define_code == 2):
+                    asm = '\t\t\tLOAD\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4, ' + hex(first)[2:].rjust(4, '0') + '\n'
+            # if third element is a number and first is a variable
+            elif(first_flag):
+                if(self.define_code == 1):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+        else:
+            mem2 = operands
+            # check which is a number
+            try:
+                second = int(self.phrase[1].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = second
+            # if both are  
+            if(second_flag):
+                if(self.define_code == 2):
+                    asm = '\t\t\tLOAD\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tOR   \tR4, R5\n'
+            # if first element is a number and third is a variable
+            elif(temp == second):
+                asm = asm + '\t\t\tOR   \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+            
+    def e_xor(self):
+        asm = ""
+        operands = self.get_operands()
+        first_flag = False
+        second_flag = False
+        if(len(self.phrase) == 3):
+            mem1 = operands[0]
+            mem2 = operands[1]
+            
+            # check which is a number
+            try:
+                first = int(self.phrase[0].val, 0)
+            except ValueError:
+                first = 0
+                first_flag = True
+            try:
+                second = int(self.phrase[2].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = first ^ second
+             # if both are  
+            if(first_flag and second_flag):
+                if(self.define_code == 1):
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4,' + mem1 + '\n'
+                elif(self.define_code == 2):
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4,' + mem2 + '\n'
+                elif(self.define_code == 3):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4,' + mem2 + '\n'
+                else:   
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4, R5\n'
+            # if first element is a number and third is a variable
+            elif(second_flag):
+                if(self.define_code == 2):
+                    asm = '\t\t\tLOAD\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            # if third element is a number and first is a variable
+            elif(temp == second):
+                if(self.define_code == 1):
+                    asm = '\t\t\tLOAD\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+                else:
+                    asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+            
+        else:
+            mem2 = operands
+            
+            # check which is a number
+            try:
+                second = int(self.phrase[1].val, 0)
+            except ValueError:
+                second = 0
+                second_flag = True  
+            
+            temp = second
+            # if both are  
+            if(second_flag):
+                if(self.define_code == 2):
+                    asm = asm + '\t\t\tLOAD\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4, R5\n'
+                else:
+                    asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
+                    asm = asm + '\t\t\tXOR   \tR4, R5\n'
+            # if third element is a number and first is a variable
+            elif(temp == second):
+                asm = asm + '\t\t\tXOR   \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            # if there is no variable, pre-process
+            else:
+                asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            order_index = [y[1] for y in self.express_list].index(self.express_index-1)
+            self.temp_assembly[order_index] = asm
+            
     def conditional_less_than(self):
         self.rel = self.conditional_generic()
         self.cond_point = 1
@@ -275,150 +871,6 @@ class CodeGen:
     def conditional_not_equal(self):
         self.rel = self.conditional_generic()
         self.cond_point = 4
-      
-    def post_inc(self):
-        mem = self.check_repeat(self.phrase[0])
-        if(self.repeat):
-            asm = '\t\t\tFETCH\tR2, ' + mem + '\n\t\t\tADD \tR2, 0001\n'
-            self.assembly = self.assembly + asm 
-        else:
-            print("ERROR: " + mem + "Variable not declared.")
-            sys.exit(1)
-            
-    def e_add(self):
-        operands = self.get_operands()
-        mem1 = operands[0]
-        mem2 = operands[1]
-        
-        # check which is a number
-        try:
-            first = int(self.phrase[0].val, 0)
-        except ValueError:
-            first = 0
-        try:
-            second = int(self.phrase[2].val, 0)
-        except ValueError:
-            second = 0
-        
-        temp = first + second
-        # if both are  
-        if(temp == 0):
-            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
-            asm = asm + '\t\t\tADD \tR4, R5\n'
-        # if first element is a number and third is a variable
-        elif(temp == first):
-            asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
-            asm = asm + '\t\t\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        # if third element is a number and first is a variable
-        elif(temp == second):
-            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\t\t\tADD \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        # if there is no variable, pre-process
-        else:
-            asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        self.assembly = self.assembly + asm
-     
-    def e_and(self):
-        operands = self.get_operands()
-        mem1 = operands[0]
-        mem2 = operands[1]
-        
-        # check which is a number
-        try:
-            first = int(self.phrase[0].val, 0)
-        except ValueError:
-            first = 0
-        try:
-            second = int(self.phrase[2].val, 0)
-        except ValueError:
-            second = 0
-        
-        temp = first & second
-        # if both are  
-        if(first == 0 and second == 0):
-            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
-            asm = asm + '\t\t\tAND \tR4, R5\n'
-        # if first element is a number and third is a variable
-        elif(temp != first):
-            asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
-            asm = asm + '\t\t\tAND \tR4, ' + hex(first)[2:].rjust(4, '0') + '\n'
-        # if third element is a number and first is a variable
-        elif(temp != second):
-            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\t\t\tAND \tR4, ' + hex(second)[2:].rjust(4, '0') + '\n'
-        # if there is no variable, pre-process
-        else:
-            asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        self.assembly = self.assembly + asm
-    
-    def e_or(self):
-        operands = self.get_operands()
-        mem1 = operands[0]
-        mem2 = operands[1]
-        # check which is a number
-        try:
-            first = int(self.phrase[0].val, 0)
-        except ValueError:
-            first = 0
-        try:
-            second = int(self.phrase[2].val, 0)
-        except ValueError:
-            second = 0
-        
-        temp = first | second
-        # if both are  
-        if(first == 0 and second == 0):
-            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
-            asm = asm + '\t\t\tOR  \tR4, R5\n'
-        # if first element is a number and third is a variable
-        elif(temp == first):
-            asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
-            asm = asm + '\t\t\tOR  \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        # if third element is a number and first is a variable
-        elif(temp == second):
-            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\t\t\tOR  \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        # if there is no variable, pre-process
-        else:
-            asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        self.assembly = self.assembly + asm
-    
-    def e_xor(self):
-        operands = self.get_operands()
-        mem1 = operands[0]
-        mem2 = operands[1]
-        
-        # check which is a number
-        try:
-            first = int(self.phrase[0].val, 0)
-        except ValueError:
-            first = 0
-        try:
-            second = int(self.phrase[2].val, 0)
-        except ValueError:
-            second = 0
-        
-        temp = first ^ second
-        # if both are  
-        if(first == 0 and second == 0):
-            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\t\t\tFETCH\tR5, ' + mem2 + '\n'
-            asm = asm + '\t\t\tXOR \tR4, R5\n'
-        # if first element is a number and third is a variable
-        elif(temp == first):
-            asm = '\t\t\tFETCH\tR4, ' + mem2 + '\n'
-            asm = asm + '\t\t\tXOR \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        # if third element is a number and first is a variable
-        elif(temp == second):
-            asm = '\t\t\tFETCH\tR4, ' + mem1 + '\n'
-            asm = asm + '\t\t\tXOR \tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        # if there is no variable, pre-process
-        else:
-            asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
-        self.assembly = self.assembly + asm
         
     def assign_statement(self):
         mem = self.check_repeat(self.phrase[0])
@@ -427,14 +879,25 @@ class CodeGen:
             if(self.phrase[2].type == 'NUMBER'):
                 temp = int(self.phrase[2].val, 0)
                 asm = '\t\t\tLOAD\tR4, ' + hex(temp)[2:].rjust(4, '0') + '\n'
+            elif(self.phrase[2].type == 'IDENTIFIER'):
+                real_val = self.check_repeat(self.phrase[2])
+                if(self.define_repeat):
+                    asm = '\t\t\tLOAD\tR4, ' + real_val + '\n'
+                elif(self.repeat):
+                    asm = '\t\t\tFETCH\tR4, ' + real_val + '\n'
+                else:
+                    print("ERROR: " + mem + "Variable not declared.")
+                    sys.exit(1)
+        
+                
             asm = asm + '\t\t\tSTORE\tR4, ' + mem
             
-            self.assembly = self.assembly + asm + '\n'
+            self.assembly = self.assembly + ''.join(self.temp_assembly) + asm +  '\n'
         else:
             print("ERROR: " + mem + "Variable not declared.")
             sys.exit(1)
         
-    def int_declare(self):
+    def int__array_declare(self):
         mem = self.check_repeat(self.phrase[1])
         if(self.repeat):
             print("ERROR: " + mem + "Variable already declared.")
@@ -451,10 +914,41 @@ class CodeGen:
             asm = asm + '0000\n'
         asm = asm + '\t\t\tSTORE\tR1, ' + mem + '\n'
         if(self.header_flag):
-            self.assembly = self.assembly + asm
+            self.assembly = self.assembly + ''.join(self.temp_assembly) + asm 
             self.file_output()
+            
         else:
-            self.assembly = self.assembly + asm
+            self.assembly = self.assembly + ''.join(self.temp_assembly) + asm 
+    
+    def int_declare(self):
+        mem = self.check_repeat(self.phrase[1])
+        if(self.repeat):
+            print("ERROR: " + mem + "Variable already declared.")
+            sys.exit(1)
+        
+        print(mem)
+        asm = '\t\t\tLOAD\tR1, '
+        if(len(self.phrase) > 3):
+            if(self.phrase[3].val == ';'):
+                asm = asm + "R4\n"
+            elif(self.phrase[3].type == 'IDENTIFIER'):
+                temp = self.check_repeat(self.phrase[3])
+                if(self.define_repeat or self.repeat):
+                    asm = asm + temp + '\n'
+                else:
+                    print("ERROR: " + str(temp) + "Variable not declared.")
+                    sys.exit(1)
+            else:          
+                asm = asm + hex(int(self.phrase[3].val, 0))[2:].rjust(4, '0') + '\n'
+        else:
+            asm = asm + '0000\n'
+        asm = asm + '\t\t\tSTORE\tR1, ' + mem + '\n'
+        if(self.header_flag):
+            self.assembly = self.assembly + ''.join(self.temp_assembly) + asm 
+            self.file_output()
+            
+        else:
+            self.assembly = self.assembly + ''.join(self.temp_assembly) + asm 
         
     def main_start(self):
         # push main on label on top of main function
@@ -469,6 +963,9 @@ class CodeGen:
             file.close()
         self.assembly = ""
         #self.file_output()
+    
+    def parantheses(self):
+        return
     
     def isr_start(self):
         asm1 = '\t\t\tADDRESS 0300\nISR\n'
@@ -500,11 +997,14 @@ class CodeGen:
         
         assemble = {
             'DEFINE'            : self.define,
+            'PARANTHESES'       : self.parantheses,
             'MAIN'              : self.main_start,
             'ISR'               : self.isr_start,
             'INT_DECLARE'       : self.int_declare,
             'ENABLE_INTERRUPT'  : self.enable_interrupt,
             'DISABLE_INTERRUPT' : self.disable_interrupt,
+            'E_SHIFT_RIGHT'     : self.e_shift_right,
+            'E_SHIFT_LEFT'      : self.e_shift_left,
             'E_ADD_RULE'        : self.e_add,
             'E_XOR_RULE'        : self.e_xor,
             'E_OR_RULE'         : self.e_or,
